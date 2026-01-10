@@ -1,0 +1,85 @@
+Screen {
+    layout: vertical;
+    color: #e5e7eb;
+}
+
+#chat {
+    height: 1fr;
+    background: #0d111a;
+    border: none;
+    padding: 1;
+}
+
+Input {
+    border: hidden;
+    padding: 1;
+    margin: 1 0 0 0;
+    color: #e5e7eb;
+}
+
+#suggestions {
+    display: none;
+    max-height: 8;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: $surface;
+    width: 100%;
+}
+
+#suggestions OptionList {
+    border: hidden;
+}
+
+#suggestions OptionList > .option.--highlighted {
+    background: #0ea5e9;
+    color: #0b1220;
+}
+
+#confirm {
+    display: none;
+    max-height: 6;
+    margin: 1 0 1 0;
+    padding: 0;
+    border: none;
+    background: #0d111a;
+    width: 100%;
+}
+
+#confirm OptionList {
+    background: #0d111a;
+    border: none;
+    padding: 0 1 0 1;
+    margin: 0;
+}
+
+#confirm OptionList > .option.--highlighted {
+    background: #0ea5e9;
+    color: #0b1220;
+}
+
+#confirm_prompt {
+    display: none;
+    background: #0d111a;
+    border: none;
+    padding: 1 1 0 1;
+    margin: 0;
+    color: #e5e7eb;
+    text-style: bold;
+    width: 100%;
+}
+
+#suggestions OptionList > .option-list--option{
+    margin: 1;
+}
+
+#status {
+    margin: 1;
+    text-align: left;
+    color: #94a3b8;
+}
+
+RichLog {
+    padding: 0;
+    background: transparent;
+}

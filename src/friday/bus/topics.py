@@ -1,0 +1,11 @@
+"""Topic names for the event bus."""
+
+INPUT_TEXT = "input.text"
+INPUT_AUDIO_FRAMES = "input.audio.frames"
+INPUT_TEXT_PARTIAL = "input.text.partial"
+AGENT_PLAN = "agent.plan"
+TOOLS_CALL = "tools.call"
+TOOLS_RESULT = "tools.result"
+OUTPUT_TEXT = "output.text"
+OUTPUT_TTS = "output.tts"
+SYSTEM_LOG = "system.log"
