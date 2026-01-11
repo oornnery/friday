@@ -1,3 +1,4 @@
+import time
 from datetime import datetime
 from typing import ClassVar
 
@@ -11,12 +12,23 @@ from textual.widgets import (
     Collapsible,
     Input,
     Label,
+    LoadingIndicator,
     Markdown,
     OptionList,
     Static,
 )
 from textual.widgets._input import Selection
 from textual.widgets.option_list import Option
+
+# Lazy imports for performance
+_pyperclip = None
+
+
+def get_pyperclip():
+    global _pyperclip
+    if _pyperclip is None:
+        import pyperclip as _pyperclip
+    return _pyperclip
 
 
 class IconCopy(Static):
@@ -31,13 +43,13 @@ class IconCopy(Static):
         self.tooltip = "Copy to clipboard"
 
     def on_click(self) -> None:
-        import pyperclip
-
-        pyperclip.copy(self._content)
-        self.update(self.ICON_CHECK)
-        self.tooltip = "Copied!"
-        self.set_timer(1.0, self._reset_icon)
-        self.post_message(self.Copied(self._content))
+        pc = get_pyperclip()
+        if pc:
+            pc.copy(self._content)
+            self.update(self.ICON_CHECK)
+            self.tooltip = "Copied!"
+            self.set_timer(1.0, self._reset_icon)
+            self.post_message(self.Copied(self._content))
 
     def _reset_icon(self) -> None:
         self.update(self.ICON_COPY)
@@ -50,7 +62,7 @@ class IconCopy(Static):
 
 
 class ChatMessage(Container):
-    """Base class for all chat messages."""
+    """Base class for all chat messages with throttled updates."""
 
     def __init__(
         self, role: str, content: str = "", date_time: datetime | None = None, **kwargs
@@ -60,14 +72,24 @@ class ChatMessage(Container):
         self.content = content
         self.timestamp = date_time or datetime.now()
         self.border_title = role.title()
+        self._last_update = 0.0
+        self._update_threshold = 0.05  # 50ms throttle for smoother TUI
 
     def on_mount(self) -> None:
         self.border_subtitle = self.timestamp.strftime("%H:%M:%S")
 
+    def update_content(self, new_content: str, force: bool = False) -> None:
+        self.content = new_content
+        now = time.time()
+        if force or (now - self._last_update > self._update_threshold):
+            try:
+                self.query_one(Markdown).update(new_content)
+                self._last_update = now
+            except Exception:
+                pass
+
     def compose(self) -> ComposeResult:
-        with Horizontal(classes="chat-row"):
-            yield Markdown(self.content)
-            yield IconCopy(self.content)
+        yield Horizontal(Markdown(self.content), IconCopy(self.content), classes="chat-row")
 
 
 class ChatMessageUser(ChatMessage):
@@ -78,12 +100,14 @@ class ChatMessageUser(ChatMessage):
 
 
 class ChatMessageAssistant(ChatMessage):
-    """Message sent by the assistant."""
+    """Message sent by the assistant with improved thinking/loading UI."""
+
+    is_loading = reactive(True)
 
     def __init__(
         self,
         content: str,
-        thinking_text: str | None = None,
+        thinking_text: str = "",
         cost: float | None = None,
         tokens: int | None = None,
         **kwargs,
@@ -92,6 +116,8 @@ class ChatMessageAssistant(ChatMessage):
         self.thinking_text = thinking_text
         self.cost = cost
         self.tokens = tokens
+        self.loading_indicator = LoadingIndicator()
+        self._thinking_last_update = 0.0
 
     def on_mount(self) -> None:
         parts = []
@@ -103,21 +129,59 @@ class ChatMessageAssistant(ChatMessage):
         self.border_subtitle = " | ".join(parts)
 
     def compose(self) -> ComposeResult:
+        # 1. Main Content (Response) ALWAYS ABOVE
         yield from super().compose()
 
-        if self.thinking_text:
-            yield Collapsible(
-                Markdown(self.thinking_text),
-                classes="thinking-content",
-                title="Thinking Process",
-            )
+        # 2. Loading Indicator (persistent until stop_loading)
+        yield self.loading_indicator
+
+        # 3. Thinking/Reasoning (Available from start, scrollable)
+        with (
+            Collapsible(title="Thinking Process", collapsed=False, id="thinking-collapsible"),
+            VerticalScroll(classes="thinking-scroll"),
+        ):
+            yield Markdown(self.thinking_text or "Thinking...", id="thinking-md")
+
+    def update_thinking(self, text: str) -> None:
+        """Update the thinking text with throttling."""
+        self.thinking_text += text
+        now = time.time()
+        if now - self._thinking_last_update > self._update_threshold:
+            try:
+                md = self.query_one("#thinking-md", Markdown)
+                md.update(self.thinking_text)
+                self._thinking_last_update = now
+            except Exception:
+                pass
+
+    def stop_thinking(self) -> None:
+        """Collapse thinking process and ensure final text is set."""
+        try:
+            # Final update
+            self.query_one("#thinking-md", Markdown).update(self.thinking_text)
+            # Collapse
+            col = self.query_one("#thinking-collapsible", Collapsible)
+            col.collapsed = True
+        except Exception:
+            pass
+
+    def stop_loading(self) -> None:
+        """Stop the loading state and hide indicator."""
+        self.is_loading = False
+        try:
+            if self.loading_indicator.is_mounted:
+                # Instead of removing, we should probably just hide it if we want it "available"
+                # but "available from the beginning" means yielded.
+                # Removing is safer for performance if it's no longer needed.
+                self.loading_indicator.display = False
+        except Exception:
+            pass
 
 
 class ChatMessageTool(ChatMessage):
     """Message representing tool output."""
 
     def __init__(self, tool_name: str, output: str, log_tool: str | None = None, **kwargs) -> None:
-        # Format content as markdown code block for the base class
         formatted_content = f"```\n{output}\n```"
         super().__init__(role="tool", content=formatted_content, **kwargs)
         self.border_title = f"Tool: {tool_name}"
@@ -145,8 +209,6 @@ class ChatMessageConfirm(ChatMessage):
         super().__init__(role="confirm", content=question, **kwargs)
         self.question = question
         self.border_title = "Confirmation Required"
-        # Override alignment for confirm if needed, but base enforces left.
-        # We can override in CSS above.
 
     def compose(self) -> ComposeResult:
         yield Label(self.question)
@@ -170,7 +232,6 @@ class ChatViewer(VerticalScroll):
 
     def add_message(self, message: ChatMessage) -> None:
         self.mount(message)
-        # Ensure we scroll to the bottom when a new message arrives
         self.call_after_refresh(self.scroll_end, animate=True)
 
     def clear(self) -> None:
@@ -192,18 +253,13 @@ class ChatStatus(Static):
 
 
 class ChatInput(Vertical):
-    """
-    Input with autocomplete
-    Layout: Vertical stack of (InputContainer) and (OptionList).
-    InputContainer Input field.
-    """
+    """Input with autocomplete."""
 
     class Submitted(Message):
         def __init__(self, value: str) -> None:
             super().__init__()
             self.value = value
 
-    # Public API
     value = reactive("")
 
     def __init__(self) -> None:
@@ -236,17 +292,12 @@ class ChatInput(Vertical):
         self.input_widget.value = ""
         self.value = ""
 
-    # --- Event Handlers ---
-
     @on(Input.Changed)
     def _on_input_changed(self, event: Input.Changed) -> None:
         self.value = event.value
-        self._history_pos = None  # Reset history on typing
+        self._history_pos = None
 
-        # Check for tokens
-        token_info = self._get_current_token(
-            self.value, self.input_widget.cursor_position
-        )
+        token_info = self._get_current_token(self.value, self.input_widget.cursor_position)
         self._active_token = None
 
         if token_info:
@@ -276,13 +327,9 @@ class ChatInput(Vertical):
         if self._active_token:
             self._apply_suggestion(event.option)
 
-    # --- Key Handling ---
-
     def on_key(self, event: events.Key) -> None:
         options = self.options_widget
-
         if options.display:
-            # Navigation mode
             if event.key == "escape":
                 event.stop()
                 self._hide_suggestions()
@@ -293,11 +340,8 @@ class ChatInput(Vertical):
                 event.stop()
                 self._navigate_options(event.key, options)
         else:
-            # History mode
             if event.key in ("up", "down") and self._navigate_history(event.key):
                 event.stop()
-
-    # --- Logic ---
 
     def _get_current_token(self, text: str, cursor: int) -> tuple[str, int, int] | None:
         if not text:
@@ -345,18 +389,12 @@ class ChatInput(Vertical):
     def _apply_suggestion(self, option: Option) -> None:
         if not self._active_token:
             return
-
         insert = str(option.id)
         start, end = self._active_token
-
-        # Reconstruct
         new_val = f"{self.value[:start]}{insert} {self.value[end:]}"
         self.input_widget.value = new_val
-
-        # Move cursor
         new_cursor = start + len(insert) + 1
         self.input_widget.selection = Selection.cursor(new_cursor)
-
         self._hide_suggestions()
         self.input_widget.focus()
 
@@ -384,7 +422,6 @@ class ChatInput(Vertical):
             return False
         if not self._history:
             return False
-
         if key == "up":
             if self._history_pos is None:
                 self._history_pos = len(self._history) - 1
@@ -399,9 +436,8 @@ class ChatInput(Vertical):
                 self._history_pos = None
                 self.input_widget.value = ""
                 return True
-
         if self._history_pos is not None:
             self.input_widget.value = self._history[self._history_pos]
-            self.input_widget.action_end()  # Move cursor to end
+            self.input_widget.action_end()
             return True
         return False

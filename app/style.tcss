@@ -168,3 +168,55 @@ ChatInput OptionList {
     background: $surface;
     display: none;
 }
+
+/* Modals & History Screen (Confirm Pattern) */
+
+InputModal, HistoryScreen {
+    align: center middle;
+}
+
+#modal-container {
+    width: 40;
+    height: auto;
+    background: $surface;
+    border: blank;
+    padding: 1;
+}
+
+#history-container {
+    width: 80%;
+    height: 80%;
+    background: $surface;
+    border: blank;
+    padding: 1;
+}
+
+.modal-title {
+    width: 100%;
+    content-align: center middle;
+    color: $warning;
+    margin-bottom: 1;
+}
+
+.buttons {
+    width: 100%;
+    height: auto;
+    align: center middle;
+    margin-top: 1;
+}
+
+#modal-input, #search-input {
+    border: blank;
+    background: $surface-darken-1;
+    margin: 1 0;
+}
+
+#history-list {
+    height: 1fr;
+    background: $surface-darken-1;
+    border: blank;
+}
+
+.id-label {
+    color: $text-muted;
+}

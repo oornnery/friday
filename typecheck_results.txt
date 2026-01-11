@@ -1,0 +1,167 @@
+error[invalid-argument-type]: Argument to bound method `__init__` is incorrect
+  --> app/agent/agents.py:78:9
+   |
+76 |         memory_manager=memory,
+77 |         knowledge=knowledge,
+78 |         tools=list(tools),
+   |         ^^^^^^^^^^^^^^^^^ Expected `Sequence[Toolkit | ((...) -> Unknown) | Function | dict[Unknown, Unknown]] | None`, found `list[Agent | DuckDuckGoTools | CalculatorTools | ... omitted 6 union elements]`
+79 |         add_history_to_context=True,
+80 |         num_history_runs=3,
+   |
+info: Method defined here
+   --> .venv/lib/python3.12/site-packages/agno/agent/agent.py:458:9
+    |
+456 |     stream_intermediate_steps: Optional[bool] = None
+457 |
+458 |     def __init__(
+    |         ^^^^^^^^
+459 |         self,
+460 |         *,
+    |
+   ::: .venv/lib/python3.12/site-packages/agno/agent/agent.py:500:9
+    |
+498 |         skills: Optional[Skills] = None,
+499 |         metadata: Optional[Dict[str, Any]] = None,
+500 |         tools: Optional[Sequence[Union[Toolkit, Callable, Function, Dict]]] = None,
+    |         -------------------------------------------------------------------------- Parameter declared here
+501 |         tool_call_limit: Optional[int] = None,
+502 |         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[no-matching-overload]: No overload of bound method `push_screen` matches arguments
+   --> app/tui.py:118:9
+    |
+116 |                 self.notify(f"Started: {name}")
+117 |
+118 |         self.push_screen(InputModal("New Chat Name"), check_name)
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+119 |
+120 |     async def action_open_history(self) -> None:
+    |
+info: First overload defined here
+    --> .venv/lib/python3.12/site-packages/textual/app.py:2770:13
+     |
+2769 |           @overload
+2770 |           def push_screen(
+     |  _____________^
+2771 | |             self,
+2772 | |             screen: Screen[ScreenResultType] | str,
+2773 | |             callback: ScreenResultCallbackType[ScreenResultType] | None = None,
+2774 | |             wait_for_dismiss: Literal[False] = False,
+2775 | |         ) -> AwaitMount: ...
+     | |_______________________^
+2776 |
+2777 |           @overload
+     |
+info: Possible overloads for bound method `push_screen`:
+info:   (self, screen: Screen[ScreenResultType@push_screen] | str, callback: ((ScreenResultType@push_screen | None, /) -> None) | ((ScreenResultType@push_screen | None, /) -> Awaitable[None]) | None = None, wait_for_dismiss: Literal[False] = False) -> AwaitMount
+info:   (self, screen: Screen[ScreenResultType@push_screen] | str, callback: ((ScreenResultType@push_screen | None, /) -> None) | ((ScreenResultType@push_screen | None, /) -> Awaitable[None]) | None = None, wait_for_dismiss: Literal[True] = True) -> Future[ScreenResultType@push_screen]
+info: Overload implementation defined here
+    --> .venv/lib/python3.12/site-packages/textual/app.py:2785:9
+     |
+2783 |           ) -> asyncio.Future[ScreenResultType]: ...
+2784 |
+2785 |       def push_screen(
+     |  _________^
+2786 | |         self,
+2787 | |         screen: Screen[ScreenResultType] | str,
+2788 | |         callback: ScreenResultCallbackType[ScreenResultType] | None = None,
+2789 | |         wait_for_dismiss: bool = False,
+2790 | |     ) -> AwaitMount | asyncio.Future[ScreenResultType]:
+     | |______________________________________________________^
+2791 |           """Push a new [screen](/guide/screens) on the screen stack, making it the current screen.
+     |
+info: rule `no-matching-overload` is enabled by default
+
+error[no-matching-overload]: No overload of bound method `push_screen` matches arguments
+   --> app/tui.py:144:9
+    |
+142 |                 pass
+143 |
+144 |         self.push_screen(screen, on_select)
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+145 |
+146 |     async def action_rename_chat(self) -> None:
+    |
+info: First overload defined here
+    --> .venv/lib/python3.12/site-packages/textual/app.py:2770:13
+     |
+2769 |           @overload
+2770 |           def push_screen(
+     |  _____________^
+2771 | |             self,
+2772 | |             screen: Screen[ScreenResultType] | str,
+2773 | |             callback: ScreenResultCallbackType[ScreenResultType] | None = None,
+2774 | |             wait_for_dismiss: Literal[False] = False,
+2775 | |         ) -> AwaitMount: ...
+     | |_______________________^
+2776 |
+2777 |           @overload
+     |
+info: Possible overloads for bound method `push_screen`:
+info:   (self, screen: Screen[ScreenResultType@push_screen] | str, callback: ((ScreenResultType@push_screen | None, /) -> None) | ((ScreenResultType@push_screen | None, /) -> Awaitable[None]) | None = None, wait_for_dismiss: Literal[False] = False) -> AwaitMount
+info:   (self, screen: Screen[ScreenResultType@push_screen] | str, callback: ((ScreenResultType@push_screen | None, /) -> None) | ((ScreenResultType@push_screen | None, /) -> Awaitable[None]) | None = None, wait_for_dismiss: Literal[True] = True) -> Future[ScreenResultType@push_screen]
+info: Overload implementation defined here
+    --> .venv/lib/python3.12/site-packages/textual/app.py:2785:9
+     |
+2783 |           ) -> asyncio.Future[ScreenResultType]: ...
+2784 |
+2785 |       def push_screen(
+     |  _________^
+2786 | |         self,
+2787 | |         screen: Screen[ScreenResultType] | str,
+2788 | |         callback: ScreenResultCallbackType[ScreenResultType] | None = None,
+2789 | |         wait_for_dismiss: bool = False,
+2790 | |     ) -> AwaitMount | asyncio.Future[ScreenResultType]:
+     | |______________________________________________________^
+2791 |           """Push a new [screen](/guide/screens) on the screen stack, making it the current screen.
+     |
+info: rule `no-matching-overload` is enabled by default
+
+error[no-matching-overload]: No overload of bound method `push_screen` matches arguments
+   --> app/tui.py:154:9
+    |
+152 |                 self.notify(f"Renamed: {name}")
+153 |
+154 |         self.push_screen(InputModal("Rename Chat"), do_rename)
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+155 |
+156 |     async def resume_chat(self, sid: str):
+    |
+info: First overload defined here
+    --> .venv/lib/python3.12/site-packages/textual/app.py:2770:13
+     |
+2769 |           @overload
+2770 |           def push_screen(
+     |  _____________^
+2771 | |             self,
+2772 | |             screen: Screen[ScreenResultType] | str,
+2773 | |             callback: ScreenResultCallbackType[ScreenResultType] | None = None,
+2774 | |             wait_for_dismiss: Literal[False] = False,
+2775 | |         ) -> AwaitMount: ...
+     | |_______________________^
+2776 |
+2777 |           @overload
+     |
+info: Possible overloads for bound method `push_screen`:
+info:   (self, screen: Screen[ScreenResultType@push_screen] | str, callback: ((ScreenResultType@push_screen | None, /) -> None) | ((ScreenResultType@push_screen | None, /) -> Awaitable[None]) | None = None, wait_for_dismiss: Literal[False] = False) -> AwaitMount
+info:   (self, screen: Screen[ScreenResultType@push_screen] | str, callback: ((ScreenResultType@push_screen | None, /) -> None) | ((ScreenResultType@push_screen | None, /) -> Awaitable[None]) | None = None, wait_for_dismiss: Literal[True] = True) -> Future[ScreenResultType@push_screen]
+info: Overload implementation defined here
+    --> .venv/lib/python3.12/site-packages/textual/app.py:2785:9
+     |
+2783 |           ) -> asyncio.Future[ScreenResultType]: ...
+2784 |
+2785 |       def push_screen(
+     |  _________^
+2786 | |         self,
+2787 | |         screen: Screen[ScreenResultType] | str,
+2788 | |         callback: ScreenResultCallbackType[ScreenResultType] | None = None,
+2789 | |         wait_for_dismiss: bool = False,
+2790 | |     ) -> AwaitMount | asyncio.Future[ScreenResultType]:
+     | |______________________________________________________^
+2791 |           """Push a new [screen](/guide/screens) on the screen stack, making it the current screen.
+     |
+info: rule `no-matching-overload` is enabled by default
+
+Found 4 diagnostics

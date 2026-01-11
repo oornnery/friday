@@ -1,89 +1,51 @@
-# Friday
+# Friday 🤖 - Advanced AI Terminal TUI
 
-Terminal assistant skeleton using Python, FastStream, Rich, Textual, Typer, and SQLite.
+Friday is an advanced autonomous AI assistant running in a sleek Terminal TUI (Textual User Interface), powered by `agno` and high-performance LLMs.
 
-## Quickstart
+## 🚀 Key Features
 
-- Install deps: `uv sync --extra dev`
-- Install voice deps: `uv sync --extra dev --extra voice`
-- Run TUI: `uv run friday tui`
-- List tools: `uv run friday tools list`
-- Initialize DB: `uv run friday db init`
+- **Interactive TUI (Textual)**:
+  - **Blazing Performance**: Optimized with `textual-speedups` and update throttling for smooth interactions even during high-speed streaming.
+  - **Immediate Feedback**: Loading indicators and reasoning containers appear instantly.
+  - **Smart Reasoning**: Dedicated "Thinking Process" section that automatically collapses once the final answer begins.
+  - **Advanced Chat Management**: `Ctrl+N` for New Chats, `Ctrl+O` for History browsing (with search & delete), and `Ctrl+R` for Renaming sessions.
+- **Agentic Backend (Agno)**:
+  - **SQLite Persistence**: Automatic conversation storage and context management using `agno.db.sqlite.SqliteDb`.
+  - **Multi-Model Intelligence**: Hybrid reasoning using `gpt-5-nano` and `sonar-pro` (via OpenRouter/Perplexity).
+  - **Knowledge & RAG**: Efficient handling of large context through file injection (`@filename`) and persistent memory.
+  - **HITL Integration**: Asynchronous human-in-the-loop queue for collaborative tasks.
+- **Smart Tooling**:
+  - `ShellTools`, `FileTools`, `CalculatorTools`, `DuckDuckGo`, and more.
+  - Interactive confirmation steps for critical operations.
 
-## Configuration
+## ⌨️ Keybindings
 
-Friday loads environment variables from `.env` (dev) or the OS environment.
+| Key | Action |
+| --- | --- |
+| `Ctrl+N` | Start a **New Chat** session |
+| `Ctrl+O` | Open Chat **History** & Switch Sessions |
+| `Ctrl+R` | **Rename** Current Chat |
+| `Tab` | Autocomplete Tool (`/`) or File (`@`) suggestions |
+| `Esc` | Close history or dismiss suggestions |
 
-- Required for providers:
-  - `PERPLEXITY_API_KEY`
-  - `OPENROUTER_API_KEY`
-- Web search:
-  - `OPENROUTER_BASE_URL` (default `https://openrouter.ai/api/v1`)
-  - `OPENROUTER_MODEL` (default `openrouter/auto`)
-  - `OPENROUTER_TIMEOUT_S` (default `30`)
-  - `OPENROUTER_VISION_MODEL` (default `openai/gpt-4o-mini`)
-  - `PERPLEXITY_BASE_URL` (default `https://api.perplexity.ai`)
-  - `PERPLEXITY_MODEL` (default `sonar`)
-  - `PERPLEXITY_TIMEOUT_S` (default `15`)
-  - `PERPLEXITY_MAX_RESULTS` (default `5`)
-  - `FRIDAY_WEB_SEARCH_PROVIDER` (`auto`, `perplexity`, `brave`, `ddg`)
-  - `FRIDAY_WEB_SEARCH_UA` (default `FridayBot/0.1 (+https://localhost)`)
-  - `BRAVE_SEARCH_API_KEY`
-  - `BRAVE_SEARCH_BASE_URL` (default `https://api.search.brave.com`)
-  - `BRAVE_SEARCH_TIMEOUT_S` (default `10`)
-  - `BRAVE_SEARCH_MAX_RESULTS` (default `5`)
-  - `DDG_MAX_RESULTS` (default `5`)
-- Voice:
-  - `FRIDAY_VOICE_MODE` (`ptt`, `vad`, `both`)
-  - `FRIDAY_VOICE_INPUT_DEVICE` (sounddevice input device name/id)
-  - `FRIDAY_VOICE_OUTPUT_DEVICE` (sounddevice output device name/id)
-  - `FRIDAY_VOICE_SAMPLE_RATE` (default `16000`)
-  - `FRIDAY_VOICE_FRAME_MS` (default `30`)
-  - `FRIDAY_VAD_SENSITIVITY` (default `2`)
-  - `FRIDAY_VAD_MIN_SPEECH_MS` (default `180`)
-  - `FRIDAY_VAD_SILENCE_MS` (default `600`)
-  - `FRIDAY_STT_MODEL` (default `base`)
-  - `FRIDAY_STT_DEVICE` (default `cpu`)
-  - `FRIDAY_STT_COMPUTE_TYPE` (default `int8`)
-  - `FRIDAY_STT_LANGUAGE` (optional, e.g. `pt`)
-  - `FRIDAY_STT_BEAM_SIZE` (default `5`)
-  - `FRIDAY_STT_PARTIAL_INTERVAL_S` (default `1.5`)
-  - `FRIDAY_TTS_ENABLED` (default `true`)
-  - `FRIDAY_TTS_RATE` (default `180`)
-  - `FRIDAY_TTS_VOLUME` (default `0.9`)
-  - `FRIDAY_TTS_VOICE` (optional voice id)
-  - Install with `uv sync --extra voice` to enable local STT/TTS dependencies
-- MCP:
-  - `FRIDAY_MCP_CONFIG` (path to JSON config)
-  - Example config:
+## 🛠 Features Implemented & Optimized
 
-```json
-{
-  "servers": [
-    {
-      "name": "local",
-      "transport": "stdio",
-      "command": "uvx",
-      "args": ["mcp-server-example"],
-      "trusted": true
-    }
-  ]
-}
-```
-- Core:
-  - `FRIDAY_WORKSPACE` (default `~/.friday/workspace`)
-  - `FRIDAY_DATA_DIR` (default `~/.friday`)
-  - `FRIDAY_BROKER_URL`
-  - `FRIDAY_SESSION_ID`
+- [x] **SQLite Persistence**: Full session management integrated.
+- [x] **Context Optimization**: Context compression and smart history summarization on resume.
+- [x] **Performance Mode**: Throttled UI updates and `textual-speedups` for zero-lag streaming.
+- [x] **Modular Architecture**: Separated logic into `agents.py`, `tools.py`, `memory.py`, and `knowledge.py`.
 
-Copy `.env.example` to `.env` and fill in values.
+## 🚦 Getting Started
 
-## Layout
+1. **Environment Setup**:
+   ```bash
+   export OPENROUTER_API_KEY=your_key
+   export PERPLEXITY_API_KEY=your_key
+   ```
+2. **Run TUI**:
+   ```bash
+   uv run friday
+   ```
 
-- `src/friday/app`: Textual TUI and entrypoints
-- `src/friday/core`: runtime, state, policy
-- `src/friday/bus`: event topics and bus
-- `src/friday/tools`: registry, gateway, local tools
-- `src/friday/storage`: SQLite and repositories
-- `src/friday/voice`: voice engine stubs
-- `src/friday/mcp`: MCP stubs
+---
+*Created with ❤️ by the Friday Team.*
