@@ -160,18 +160,8 @@ ChatStatus {
 ChatInput {
     height: auto;
     min-height: 3;
+    max-height: 14;
     background: #111111;
-}
-
-/*
-    Stack input and autocomplete text
-    Using dock: top allows them to overlap if we ensure container has height.
-*/
-ChatInput .input-container {
-    height: auto;
-    min-height: 1;
-    width: 100%;
-    /* layout: vertical; Default is fine, docking removes from flow */
 }
 
 #chat-input {
@@ -179,6 +169,12 @@ ChatInput .input-container {
     border: blank;
     width: 100%;
     height: auto;
+    min-height: 3;
+    max-height: 12;
+}
+
+#chat-input:focus {
+    border: blank;
 }
 
 ChatInput OptionList {

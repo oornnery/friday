@@ -29,15 +29,48 @@ info: Method defined here
     |
 info: rule `invalid-argument-type` is enabled by default
 
-error[no-matching-overload]: No overload of bound method `push_screen` matches arguments
-   --> app/tui.py:118:9
+error[call-non-callable]: Object of type `object` is not callable
+   --> app/agent/agents.py:134:20
     |
-116 |                 self.notify(f"Started: {name}")
-117 |
-118 |         self.push_screen(InputModal("New Chat Name"), check_name)
+132 |     # Get chat history from session if available
+133 |     if hasattr(session, "get_chat_history"):
+134 |         messages = session.get_chat_history()
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+135 |         for msg in messages:
+136 |             role = getattr(msg, "role", "unknown")
+    |
+info: rule `call-non-callable` is enabled by default
+
+error[invalid-method-override]: Invalid override of method `_on_key`
+    --> app/components/chat.py:43:9
+     |
+  41 |             self.text = text
+  42 |
+  43 |     def _on_key(self, event: events.Key) -> None:
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Definition is incompatible with `TextArea._on_key`
+  44 |         """Intercept key events before TextArea processes them."""
+  45 |         if event.key == "enter":
+     |
+    ::: .venv/lib/python3.12/site-packages/textual/widgets/_text_area.py:1684:15
+     |
+1682 |         self.update_suggestion()
+1683 |
+1684 |     async def _on_key(self, event: events.Key) -> None:
+     |               ---------------------------------------- `TextArea._on_key` defined here
+1685 |         """Handle key presses which correspond to document inserts."""
+     |
+info: This violates the Liskov Substitution Principle
+info: rule `invalid-method-override` is enabled by default
+
+error[no-matching-overload]: No overload of bound method `push_screen` matches arguments
+   --> app/tui.py:119:9
+    |
+117 |                 self.notify(f"Started: {name}")
+118 |
+119 |         self.push_screen(InputModal("New Chat Name"), check_name)
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-119 |
-120 |     async def action_open_history(self) -> None:
+120 |
+121 |     async def action_open_history(self) -> None:
     |
 info: First overload defined here
     --> .venv/lib/python3.12/site-packages/textual/app.py:2770:13
@@ -75,14 +108,14 @@ info: Overload implementation defined here
 info: rule `no-matching-overload` is enabled by default
 
 error[no-matching-overload]: No overload of bound method `push_screen` matches arguments
-   --> app/tui.py:144:9
+   --> app/tui.py:145:9
     |
-142 |                 pass
-143 |
-144 |         self.push_screen(screen, on_select)
+143 |                 pass
+144 |
+145 |         self.push_screen(screen, on_select)
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-145 |
-146 |     async def action_rename_chat(self) -> None:
+146 |
+147 |     async def action_rename_chat(self) -> None:
     |
 info: First overload defined here
     --> .venv/lib/python3.12/site-packages/textual/app.py:2770:13
@@ -120,14 +153,14 @@ info: Overload implementation defined here
 info: rule `no-matching-overload` is enabled by default
 
 error[no-matching-overload]: No overload of bound method `push_screen` matches arguments
-   --> app/tui.py:154:9
+   --> app/tui.py:155:9
     |
-152 |                 self.notify(f"Renamed: {name}")
-153 |
-154 |         self.push_screen(InputModal("Rename Chat"), do_rename)
+153 |                 self.notify(f"Renamed: {name}")
+154 |
+155 |         self.push_screen(InputModal("Rename Chat"), do_rename)
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-155 |
-156 |     async def resume_chat(self, sid: str):
+156 |
+157 |     async def resume_chat(self, sid: str):
     |
 info: First overload defined here
     --> .venv/lib/python3.12/site-packages/textual/app.py:2770:13
@@ -164,4 +197,4 @@ info: Overload implementation defined here
      |
 info: rule `no-matching-overload` is enabled by default
 
-Found 4 diagnostics
+Found 6 diagnostics

@@ -17,7 +17,6 @@ from textual.widgets import (
     OptionList,
     Static,
 )
-from textual.widgets._input import Selection
 from textual.widgets.option_list import Option
 
 # Lazy imports for performance
@@ -119,6 +118,11 @@ class ChatMessageAssistant(ChatMessage):
         self.tokens = tokens
         self.from_history = from_history
         self._thinking_last_update = 0.0
+        # Cached widget refs for performance
+        self._loader: LoadingIndicator | None = None
+        self._content_md: Markdown | None = None
+        self._thinking_md: Markdown | None = None
+        self._thinking_col: Collapsible | None = None
         # Start loading only for new messages (not from history)
         self.is_loading = not from_history and not content
 
@@ -131,14 +135,21 @@ class ChatMessageAssistant(ChatMessage):
         parts.append(self.timestamp.strftime("%H:%M:%S"))
         self.border_subtitle = " | ".join(parts)
 
-        # Set initial visibility based on loading state
+        # Cache widget refs for performance (avoid repeated queries)
         try:
-            loader = self.query_one("#loading-indicator", LoadingIndicator)
-            content_md = self.query_one("#content-md", Markdown)
-            loader.display = self.is_loading
-            content_md.display = not self.is_loading
+            self._loader = self.query_one("#loading-indicator", LoadingIndicator)
+            self._content_md = self.query_one("#content-md", Markdown)
+            self._loader.display = self.is_loading
+            self._content_md.display = not self.is_loading
         except Exception:
             pass
+
+        if not self.from_history:
+            try:
+                self._thinking_md = self.query_one("#thinking-md", Markdown)
+                self._thinking_col = self.query_one("#thinking-collapsible", Collapsible)
+            except Exception:
+                pass
 
     def compose(self) -> ComposeResult:
         # Content area - shows loading or markdown
@@ -149,53 +160,42 @@ class ChatMessageAssistant(ChatMessage):
 
         # Thinking/Reasoning - only for new messages
         if not self.from_history:
-            with Collapsible(
-                title="Thinking Process", collapsed=False, id="thinking-collapsible"
+            with (
+                Collapsible(title="Thinking Process", collapsed=False, id="thinking-collapsible"),
+                VerticalScroll(classes="thinking-scroll"),
             ):
-                with VerticalScroll(classes="thinking-scroll"):
-                    yield Markdown(self.thinking_text or "Thinking...", id="thinking-md")
+                yield Markdown(self.thinking_text or "Thinking...", id="thinking-md")
 
     def watch_is_loading(self, loading: bool) -> None:
         """Toggle visibility between loading indicator and content."""
-        try:
-            loader = self.query_one("#loading-indicator", LoadingIndicator)
-            content_md = self.query_one("#content-md", Markdown)
-            loader.display = loading
-            content_md.display = not loading
-        except Exception:
-            pass
+        if self._loader and self._content_md:
+            self._loader.display = loading
+            self._content_md.display = not loading
 
     def update_content(self, new_content: str, force: bool = False) -> None:
         """Update content and switch from loading to content view."""
         self.content = new_content
         now = time.time()
-        if force or (now - self._last_update > self._update_threshold):
-            try:
-                self.query_one("#content-md", Markdown).update(new_content)
-                self._last_update = now
-            except Exception:
-                pass
+        should_update = force or (now - self._last_update > self._update_threshold)
+        if should_update and self._content_md:
+            self._content_md.update(new_content)
+            self._last_update = now
 
     def update_thinking(self, text: str) -> None:
         """Update the thinking text with throttling."""
         self.thinking_text += text
         now = time.time()
-        if now - self._thinking_last_update > self._update_threshold:
-            try:
-                md = self.query_one("#thinking-md", Markdown)
-                md.update(self.thinking_text)
-                self._thinking_last_update = now
-            except Exception:
-                pass
+        should_update = now - self._thinking_last_update > self._update_threshold
+        if should_update and self._thinking_md:
+            self._thinking_md.update(self.thinking_text)
+            self._thinking_last_update = now
 
     def stop_thinking(self) -> None:
         """Collapse thinking process and ensure final text is set."""
-        try:
-            self.query_one("#thinking-md", Markdown).update(self.thinking_text)
-            col = self.query_one("#thinking-collapsible", Collapsible)
-            col.collapsed = True
-        except Exception:
-            pass
+        if self._thinking_md:
+            self._thinking_md.update(self.thinking_text)
+        if self._thinking_col:
+            self._thinking_col.collapsed = True
 
     def stop_loading(self) -> None:
         """Stop the loading state and show content."""
@@ -277,7 +277,9 @@ class ChatStatus(Static):
 
 
 class ChatInput(Vertical):
-    """Input with autocomplete."""
+    """Input with autocomplete and large paste detection."""
+
+    PASTE_THRESHOLD = 500  # chars threshold for "pasted content" display
 
     class Submitted(Message):
         def __init__(self, value: str) -> None:
@@ -289,39 +291,71 @@ class ChatInput(Vertical):
     def __init__(self) -> None:
         super().__init__()
         self._history: list[str] = []
+        # Cached widget references (set on mount)
+        self._input: Input | None = None
+        self._opts: OptionList | None = None
         self._history_pos: int | None = None
         self._active_token: tuple[int, int] | None = None
+        self._pasted_content: str | None = None  # Store actual pasted content
 
         self.tool_suggestions: list[tuple[str, str]] = []
         self.file_suggestions: list[str] = []
         self.max_suggestions = 8
 
     def compose(self) -> ComposeResult:
-        yield Input(placeholder="Type a message...", id="chat-input")
+        yield Input(id="chat-input", placeholder="Type a message...")
         yield OptionList(id="suggestions")
 
     def on_mount(self) -> None:
-        self.input_widget.focus()
-        self.input_widget.select_on_focus = False
+        # Cache widget refs for performance (avoid repeated queries)
+        self._input = self.query_one("#chat-input", Input)
+        self._opts = self.query_one("#suggestions", OptionList)
+        self._input.focus()
 
     @property
     def input_widget(self) -> Input:
+        # Use cached ref if available
+        if self._input is not None:
+            return self._input
         return self.query_one("#chat-input", Input)
 
     @property
     def options_widget(self) -> OptionList:
+        # Use cached ref if available
+        if self._opts is not None:
+            return self._opts
         return self.query_one("#suggestions", OptionList)
 
     def clear(self) -> None:
         self.input_widget.value = ""
         self.value = ""
+        self._pasted_content = None
+
+    def _get_actual_value(self) -> str:
+        """Get the actual value to submit (pasted content or input value)."""
+        if self._pasted_content is not None:
+            return self._pasted_content
+        return self.input_widget.value
 
     @on(Input.Changed)
     def _on_input_changed(self, event: Input.Changed) -> None:
-        self.value = event.value
+        text = event.value
+
+        # If user edits after paste placeholder, clear the stored paste
+        if self._pasted_content and not text.startswith("[Pasted Content"):
+            self._pasted_content = None
+
+        self.value = self._pasted_content if self._pasted_content else text
         self._history_pos = None
 
-        token_info = self._get_current_token(self.value, self.input_widget.cursor_position)
+        # Early exit if no special chars that trigger autocomplete
+        if "/" not in text and "@" not in text:
+            self._hide_suggestions()
+            return
+
+        # Autocomplete logic
+        cursor_pos = self.input_widget.cursor_position
+        token_info = self._get_current_token(text, cursor_pos)
         self._active_token = None
 
         if token_info:
@@ -337,35 +371,59 @@ class ChatInput(Vertical):
 
         self._hide_suggestions()
 
+    def on_paste(self, event: events.Paste) -> None:
+        """Handle paste events - detect large pastes."""
+        text = event.text
+        if len(text) > self.PASTE_THRESHOLD:
+            # Store actual content, show placeholder
+            self._pasted_content = text
+            placeholder = f"[Pasted Content {len(text)} chars]"
+            self.input_widget.value = placeholder
+            self.value = text
+            event.prevent_default()
+            event.stop()
+
     @on(Input.Submitted)
-    def _on_submit(self, event: Input.Submitted) -> None:
+    def _on_input_submitted(self, event: Input.Submitted) -> None:
+        """Handle submit from Input (Enter key)."""
         event.stop()
-        text = event.value.strip()
+        # If suggestions are open, select highlighted instead
+        if self.options_widget.display:
+            self._select_highlighted()
+            return
+        # Otherwise submit the message
+        text = self._get_actual_value().strip()
         if text:
             self._history.append(text)
             self.post_message(self.Submitted(text))
+
+    def on_key(self, event: events.Key) -> None:
+        options = self.options_widget
+
+        # Handle suggestions navigation
+        if options.display:
+            if event.key == "escape":
+                event.stop()
+                self._hide_suggestions()
+                return
+            elif event.key in ("up", "down", "pageup", "pagedown"):
+                event.stop()
+                self._navigate_options(event.key, options)
+                return
+
+        # History navigation with Ctrl+Up/Down
+        if event.key == "ctrl+up":
+            event.stop()
+            self._navigate_history("up")
+        elif event.key == "ctrl+down":
+            event.stop()
+            self._navigate_history("down")
 
     @on(OptionList.OptionSelected)
     def _on_option_selected(self, event: OptionList.OptionSelected) -> None:
         event.stop()
         if self._active_token:
             self._apply_suggestion(event.option)
-
-    def on_key(self, event: events.Key) -> None:
-        options = self.options_widget
-        if options.display:
-            if event.key == "escape":
-                event.stop()
-                self._hide_suggestions()
-            elif event.key == "enter":
-                event.stop()
-                self._select_highlighted()
-            elif event.key in ("up", "down", "pageup", "pagedown", "home", "end"):
-                event.stop()
-                self._navigate_options(event.key, options)
-        else:
-            if event.key in ("up", "down") and self._navigate_history(event.key):
-                event.stop()
 
     def _get_current_token(self, text: str, cursor: int) -> tuple[str, int, int] | None:
         if not text:
@@ -380,30 +438,34 @@ class ChatInput(Vertical):
         return (text[start:end], start, end)
 
     def _show_tools(self, query: str) -> None:
-        query = query.lower()
-        matches = [
-            Option(f"{name} — {desc}", id=name)
-            for name, desc in self.tool_suggestions
-            if query in name.lower() or query in desc.lower()
-        ]
+        query_lower = query.lower()
+        # Limit matches early to avoid creating too many Option objects
+        matches: list[Option] = []
+        for name, desc in self.tool_suggestions:
+            if query_lower in name.lower() or query_lower in desc.lower():
+                matches.append(Option(f"{name} — {desc}", id=name))
+                if len(matches) >= self.max_suggestions:
+                    break
         self._display_choices(matches)
 
     def _show_files(self, query: str) -> None:
-        query = query.lower()
-        matches = [
-            Option(f"@{path}", id=f"@{path}")
-            for path in self.file_suggestions
-            if query in path.lower()
-        ]
+        query_lower = query.lower()
+        # Limit matches early to avoid creating too many Option objects
+        matches: list[Option] = []
+        for path in self.file_suggestions:
+            if query_lower in path.lower():
+                matches.append(Option(f"@{path}", id=f"@{path}"))
+                if len(matches) >= self.max_suggestions:
+                    break
         self._display_choices(matches)
 
     def _display_choices(self, options: list[Option]) -> None:
-        w = self.options_widget
-        w.clear_options()
         if not options:
             self._hide_suggestions()
             return
-        w.add_options(options[: self.max_suggestions])
+        w = self.options_widget
+        w.clear_options()
+        w.add_options(options)  # Already limited upstream
         w.display = True
         w.highlighted = 0
 
@@ -415,10 +477,14 @@ class ChatInput(Vertical):
             return
         insert = str(option.id)
         start, end = self._active_token
-        new_val = f"{self.value[:start]}{insert} {self.value[end:]}"
-        self.input_widget.value = new_val
-        new_cursor = start + len(insert) + 1
-        self.input_widget.selection = Selection.cursor(new_cursor)
+
+        # Update input value
+        text = self.input_widget.value
+        new_text = f"{text[:start]}{insert} {text[end:]}"
+        self.input_widget.value = new_text
+        # Move cursor after inserted text
+        self.input_widget.cursor_position = start + len(insert) + 1
+
         self._hide_suggestions()
         self.input_widget.focus()
 
@@ -436,10 +502,6 @@ class ChatInput(Vertical):
             list_widget.action_page_up()
         elif key == "pagedown":
             list_widget.action_page_down()
-        elif key == "home":
-            list_widget.action_first()
-        elif key == "end":
-            list_widget.action_last()
 
     def _navigate_history(self, key: str) -> bool:
         if self.value and self._history_pos is None:
@@ -462,6 +524,5 @@ class ChatInput(Vertical):
                 return True
         if self._history_pos is not None:
             self.input_widget.value = self._history[self._history_pos]
-            self.input_widget.action_end()
             return True
         return False

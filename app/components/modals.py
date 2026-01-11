@@ -1,5 +1,5 @@
 import datetime
-from typing import Any, cast
+from typing import Any, ClassVar, cast
 
 from textual import on
 from textual.app import ComposeResult
@@ -12,7 +12,7 @@ from textual.widgets import Button, Input, Label, ListItem, ListView
 class InputModal(ModalScreen[str]):
     """A simple modal to get text input (e.g., chat name) following Confirm pattern."""
 
-    BINDINGS = [("escape", "cancel", "Close")]
+    BINDINGS: ClassVar[list[tuple[str, str, str]]] = [("escape", "cancel", "Close")]
 
     def __init__(self, title: str, initial_value: str = ""):
         super().__init__()
@@ -66,14 +66,12 @@ class HistoryItem(ListItem):
 class HistoryScreen(ModalScreen[str]):
     """A screen to browse and manage old chats."""
 
-    BINDINGS = [("escape", "close", "Close")]
+    BINDINGS: ClassVar[list[tuple[str, str, str]]] = [("escape", "close", "Close")]
 
     def __init__(self, sessions: list[dict[str, Any]]):
         super().__init__()
         # Sort sessions by created_at descending (most recent first)
-        self.all_sessions = sorted(
-            sessions, key=lambda s: s.get("created_at", 0), reverse=True
-        )
+        self.all_sessions = sorted(sessions, key=lambda s: s.get("created_at", 0), reverse=True)
         self.filtered_sessions = self.all_sessions
 
     def action_close(self) -> None:
