@@ -61,6 +61,7 @@ class OutputText:
     message_id: str
     ts: int
     text: str
+    thinking: str | None = None
 
 
 def new_message_id() -> str:

@@ -66,9 +66,14 @@ def _parse_voice_mode(value: str) -> VoiceMode:
 
 def load_settings() -> Settings:
     load_dotenv(find_dotenv(usecwd=True))
-    workspace_path = Path(
-        os.environ.get("FRIDAY_WORKSPACE", "~/.friday/workspace")
-    ).expanduser()
+
+    # Default workspace to the current working directory when not provided, so
+    # TUI file suggestions (@) use the active project instead of ~/.friday/workspace.
+    workspace_env = os.environ.get("FRIDAY_WORKSPACE")
+    workspace_path = Path(workspace_env).expanduser() if workspace_env else Path.cwd()
+    if not workspace_path.exists():
+        # Fall back to the current project when the configured workspace is missing.
+        workspace_path = Path.cwd()
     data_dir = Path(os.environ.get("FRIDAY_DATA_DIR", "~/.friday")).expanduser()
     broker_url = os.environ.get("FRIDAY_BROKER_URL")
     voice_mode = _parse_voice_mode(os.environ.get("FRIDAY_VOICE_MODE", "ptt"))

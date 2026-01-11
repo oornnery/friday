@@ -15,6 +15,8 @@ Handler = Callable[[object], Awaitable[None]]
 class EventBus(Protocol):
     def subscribe(self, topic: str, handler: Handler) -> None: ...
 
+    def unsubscribe(self, topic: str, handler: Handler) -> None: ...
+
     async def publish(self, topic: str, message: object) -> None: ...
 
 
@@ -24,6 +26,12 @@ class InMemoryBus:
 
     def subscribe(self, topic: str, handler: Handler) -> None:
         self._handlers[topic].append(handler)
+
+    def unsubscribe(self, topic: str, handler: Handler) -> None:
+        """Remove a handler from a topic."""
+        handlers = self._handlers.get(topic, [])
+        if handler in handlers:
+            handlers.remove(handler)
 
     async def publish(self, topic: str, message: object) -> None:
         handlers = list(self._handlers.get(topic, []))

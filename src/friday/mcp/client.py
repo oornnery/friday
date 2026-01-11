@@ -58,6 +58,10 @@ class MCPClient:
         self._sessions.clear()
         self._tools.clear()
 
+    async def disconnect(self) -> None:
+        """Alias for close() for consistency with connect()."""
+        await self.close()
+
     def list_tools(self) -> list[MCPTool]:
         return list(self._tools.values())
 

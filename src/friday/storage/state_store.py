@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import uuid
 from pathlib import Path
 
 from friday.core.state import Message, MessageRole, StateStore
@@ -51,4 +52,4 @@ class SQLiteStateStore(StateStore):
 
 
 def _message_id() -> str:
-    return f"msg_{now_ts()}"
+    return f"msg_{uuid.uuid4().hex}"

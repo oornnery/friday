@@ -132,3 +132,20 @@ class VoiceController:
 
     def error(self) -> str | None:
         return self._error
+
+    async def stop(self) -> None:
+        """Stop all voice activities and clean up resources."""
+        # Stop VAD if running
+        if self._vad_task and not self._vad_task.done():
+            if self._vad_engine:
+                self._vad_engine.stop()
+            self._vad_task.cancel()
+            self._vad_task = None
+
+        # Stop PTT if recording
+        if self._ptt and self._ptt.is_recording():
+            self._ptt.stop()
+
+        # Stop any ongoing speech
+        if self._vad_engine:
+            self._vad_engine.stop_speaking()

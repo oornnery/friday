@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass, field
 from typing import Literal, Protocol
 
@@ -56,4 +57,4 @@ class InMemoryStateStore:
         return list(session.messages)
 
     def _new_message_id(self) -> str:
-        return f"msg_{now_ts()}_{len(self._sessions)}"
+        return f"msg_{uuid.uuid4().hex}"
