@@ -4,6 +4,11 @@ import uuid
 from contextlib import suppress
 from typing import ClassVar
 
+from agno.agent import (
+    RunContentEvent,
+    ToolCallCompletedEvent,
+    ToolCallStartedEvent,
+)
 from textual import on
 from textual.app import App, ComposeResult
 from textual.widgets import Footer, Header, Input
@@ -207,26 +212,52 @@ class FridayApp(App):
         try:
             sid = self.current_session_id
             async for chunk in async_chat(text, sid):
-                # 1. Handle Reasoning/Thinking
-                res = getattr(chunk, "reasoning_content", None)
-                if not res and hasattr(chunk, "delta"):
-                    res = getattr(chunk.delta, "reasoning_content", None)
-                if res:
-                    msg.update_thinking(res)
+                # 1. Handle Tool Call Started
+                if isinstance(chunk, ToolCallStartedEvent):
+                    tool = chunk.tool
+                    if tool:
+                        status.status = f"Using {tool.tool_name}..."
+                    continue
 
-                # 2. Handle Final Content
-                con = getattr(chunk, "content", None)
-                if not con and hasattr(chunk, "delta"):
-                    con = getattr(chunk.delta, "content", None)
-                if con:
+                # 2. Handle Tool Call Completed
+                if isinstance(chunk, ToolCallCompletedEvent):
+                    tool = chunk.tool
+                    if tool:
+                        args_str = ""
+                        if tool.tool_args:
+                            if isinstance(tool.tool_args, dict):
+                                args_str = " ".join(f"{k}={v}" for k, v in tool.tool_args.items())
+                            else:
+                                args_str = str(tool.tool_args)
+                        result_str = str(tool.result)[:2000] if tool.result else "(no output)"
+                        msg.add_tool_log(
+                            name=tool.tool_name or "unknown",
+                            args=args_str,
+                            result=result_str,
+                        )
+                    continue
+
+                # 3. Handle Reasoning/Thinking content
+                reasoning = getattr(chunk, "reasoning_content", None)
+                if reasoning:
+                    msg.update_thinking(reasoning)
+
+                # 4. Handle main content - try multiple ways to get it
+                content = None
+
+                # Try direct content attribute
+                if hasattr(chunk, "content") and chunk.content:
+                    content = chunk.content
+                # Try RunContentEvent
+                elif isinstance(chunk, RunContentEvent):
+                    content = getattr(chunk, "content", None)
+
+                if content:
                     if is_first:
-                        # Transitions
                         msg.stop_loading()
-                        msg.stop_thinking()  # Collapse thinking on content start
                         status.status = "Writing..."
                         is_first = False
-
-                    full += con
+                    full += content
                     msg.update_content(full)
 
         except Exception as e:
@@ -235,6 +266,7 @@ class FridayApp(App):
             status.status = "Ready"
             status.is_busy = False
             msg.stop_loading()
+            msg.stop_thinking()  # Collapse thinking only when fully done
 
     @on(ChatMessageConfirm.Confirmed)
     async def on_confirm(self, event: ChatMessageConfirm.Confirmed):

@@ -74,6 +74,11 @@ ChatMessageAssistant .thinking-scroll {
     max-height: 10;
 }
 
+ChatMessageAssistant .tool-logs-scroll {
+    height: auto;
+    max-height: 15;
+}
+
 ChatMessageAssistant Collapsible {
     color: $text-muted;
     background: #1a1a1a;

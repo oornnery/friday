@@ -118,11 +118,15 @@ class ChatMessageAssistant(ChatMessage):
         self.tokens = tokens
         self.from_history = from_history
         self._thinking_last_update = 0.0
+        self._tool_logs_last_update = 0.0
+        self.tool_logs: list[dict[str, str]] = []  # List of {name, args, result}
         # Cached widget refs for performance
         self._loader: LoadingIndicator | None = None
         self._content_md: Markdown | None = None
         self._thinking_md: Markdown | None = None
         self._thinking_col: Collapsible | None = None
+        self._tool_logs_md: Markdown | None = None
+        self._tool_logs_col: Collapsible | None = None
         # Start loading only for new messages (not from history)
         self.is_loading = not from_history and not content
 
@@ -148,23 +152,46 @@ class ChatMessageAssistant(ChatMessage):
             try:
                 self._thinking_md = self.query_one("#thinking-md", Markdown)
                 self._thinking_col = self.query_one("#thinking-collapsible", Collapsible)
+                # Hide thinking by default - only show when content is received
+                if self._thinking_col:
+                    self._thinking_col.display = False
+            except Exception:
+                pass
+            try:
+                self._tool_logs_md = self.query_one("#tool-logs-md", Markdown)
+                self._tool_logs_col = self.query_one("#tool-logs-collapsible", Collapsible)
+                # Hide tool logs by default
+                if self._tool_logs_col:
+                    self._tool_logs_col.display = False
             except Exception:
                 pass
 
     def compose(self) -> ComposeResult:
-        # Content area - shows loading or markdown
+        # Content area - shows loading or markdown (first)
         with Vertical(id="content-area"):
             yield LoadingIndicator(id="loading-indicator")
             yield Markdown(self.content, id="content-md")
         yield IconCopy(self.content)
 
-        # Thinking/Reasoning - only for new messages
+        # Thinking/Reasoning - only for new messages (after content)
+        # Hidden by default, shown only when actual thinking content is received
         if not self.from_history:
             with (
-                Collapsible(title="Thinking Process", collapsed=False, id="thinking-collapsible"),
+                Collapsible(
+                    title="Thinking Process",
+                    collapsed=False,
+                    id="thinking-collapsible",
+                ),
                 VerticalScroll(classes="thinking-scroll"),
             ):
-                yield Markdown(self.thinking_text or "Thinking...", id="thinking-md")
+                yield Markdown(self.thinking_text, id="thinking-md")
+
+            # Tool Logs - hidden by default, only shown when tools are used
+            with (
+                Collapsible(title="Tool Logs", collapsed=True, id="tool-logs-collapsible"),
+                VerticalScroll(classes="tool-logs-scroll"),
+            ):
+                yield Markdown("", id="tool-logs-md")
 
     def watch_is_loading(self, loading: bool) -> None:
         """Toggle visibility between loading indicator and content."""
@@ -186,6 +213,11 @@ class ChatMessageAssistant(ChatMessage):
         self.thinking_text += text
         now = time.time()
         should_update = now - self._thinking_last_update > self._update_threshold
+
+        # Show thinking collapsible when first content is received
+        if self._thinking_col and not self._thinking_col.display:
+            self._thinking_col.display = True
+
         if should_update and self._thinking_md:
             self._thinking_md.update(self.thinking_text)
             self._thinking_last_update = now
@@ -195,7 +227,29 @@ class ChatMessageAssistant(ChatMessage):
         if self._thinking_md:
             self._thinking_md.update(self.thinking_text)
         if self._thinking_col:
-            self._thinking_col.collapsed = True
+            # Hide entirely if no thinking content, otherwise just collapse
+            if not self.thinking_text.strip():
+                self._thinking_col.display = False
+            else:
+                self._thinking_col.collapsed = True
+
+    def add_tool_log(self, name: str, args: str, result: str) -> None:
+        """Add a tool execution log."""
+        self.tool_logs.append({"name": name, "args": args, "result": result})
+        # Format all logs as markdown
+        logs_md = ""
+        for log in self.tool_logs:
+            logs_md += f"### {log['name']}\n"
+            if log["args"]:
+                logs_md += f"**Args:** `{log['args']}`\n\n"
+            logs_md += f"```\n{log['result']}\n```\n\n"
+
+        # Update UI - show and expand tool logs
+        if self._tool_logs_col:
+            self._tool_logs_col.display = True  # Show when tool is used
+            self._tool_logs_col.collapsed = False  # Expand when tool is used
+        if self._tool_logs_md:
+            self._tool_logs_md.update(logs_md)
 
     def stop_loading(self) -> None:
         """Stop the loading state and show content."""
@@ -443,7 +497,7 @@ class ChatInput(Vertical):
         matches: list[Option] = []
         for name, desc in self.tool_suggestions:
             if query_lower in name.lower() or query_lower in desc.lower():
-                matches.append(Option(f"{name} — {desc}", id=name))
+                matches.append(Option(f"/{name} — {desc}", id=f"/{name}"))
                 if len(matches) >= self.max_suggestions:
                     break
         self._display_choices(matches)
