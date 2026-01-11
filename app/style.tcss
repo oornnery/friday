@@ -1,0 +1,170 @@
+* {
+    scrollbar-size: 1 1;
+    scrollbar-gutter: auto;
+}
+
+Screen {
+    layout: vertical;
+    color: #e5e7eb;
+    background: #111111;
+}
+
+Tooltip {
+    background: #111111;
+}
+
+IconCopy {
+    width: 3;
+    height: 1;
+    content-align: center middle;
+    color: $text-muted;
+    background: transparent;
+    dock: right;
+}
+
+IconCopy:hover {
+    color: $text;
+}
+
+ChatMessage {
+    padding: 1;
+    border: blank;
+    height: auto;
+    width: 1fr;
+    border-title-align: left;
+    border-subtitle-align: right;
+    border-title-color: $text-muted;
+    border-subtitle-color: $text-muted;
+}
+
+ChatMessage > .chat-row {
+    height: auto;
+}
+
+ChatMessage > .chat-row > Markdown {
+    width: 1fr;
+}
+
+ChatMessageUser {
+    background: $surface;
+    margin: 1 8 1 0;
+}
+
+ChatMessageAssistant {
+    background: $surface;
+    margin: 1 1 1 8;
+}
+
+ChatMessageAssistant Collapsible {
+    color: $text-muted;
+    background: #1a1a1a;
+    padding: 0;
+    border: none;
+}
+
+ChatMessageAssistant Collapsible CollapsibleTitle {
+    width: 1fr;
+}
+
+ChatMessageAssistant Collapsible CollapsibleTitle:hover {
+    background: $block-hover-background;
+}
+ChatMessageAssistant Collapsible CollapsibleTitle:focus {
+    background: $block-hover-background;
+}
+
+ChatMessageTool {
+    background: $surface;
+    margin: 1 4 1 4;
+}
+
+ChatMessageTool Collapsible {
+    color: $text-muted;
+    background: #1a1a1a;
+    padding: 0;
+    border: none;
+}
+
+ChatMessageTool Collapsible CollapsibleTitle {
+    width: 1fr;
+}
+
+ChatMessageTool Collapsible CollapsibleTitle:hover {
+    background: $block-hover-background;
+}
+ChatMessageTool Collapsible CollapsibleTitle:focus {
+    background: $block-hover-background;
+}
+
+ChatMessageConfirm {
+    background: $surface;
+    color: $warning;
+    margin: 1 4 1 4;
+    border-title-align: center;
+}
+
+ChatMessageConfirm Label {
+    width: 100%;
+    content-align: center middle;
+}
+
+ChatMessageConfirm .buttons {
+    width: 100%;
+    height: auto;
+    align: center middle;
+    margin-top: 1;
+}
+
+ChatMessageConfirm Button {
+    margin: 0 1;
+}
+
+ChatViewer {
+    height: 1fr;
+    background: #111111;
+    border: blank;
+    scrollbar-gutter: stable;
+}
+
+ChatStatus {
+    height: 1;
+    background: $surface-darken-1;
+    color: $text-muted;
+    padding: 0 1;
+    text-align: right;
+}
+.busy {
+    color: $warning;
+}
+
+ChatInput {
+    height: auto;
+    min-height: 3;
+    background: #111111;
+}
+
+/*
+    Stack input and autocomplete text
+    Using dock: top allows them to overlap if we ensure container has height.
+*/
+ChatInput .input-container {
+    height: auto;
+    min-height: 1;
+    width: 100%;
+    /* layout: vertical; Default is fine, docking removes from flow */
+}
+
+#chat-input {
+    background: transparent;
+    border: blank;
+    width: 100%;
+    height: auto;
+}
+
+ChatInput OptionList {
+    height: auto;
+    max-height: 14;
+    border: blank;
+    background: $surface;
+    display: none;
+}

@@ -19,22 +19,8 @@ from textual.widgets._input import Selection
 from textual.widgets.option_list import Option
 
 
-class CopyButton(Static):
+class IconCopy(Static):
     """Clickable icon to copy content to clipboard."""
-
-    DEFAULT_CSS = """
-    CopyButton {
-        width: 3;
-        height: 1;
-        content-align: center middle;
-        color: $text-muted;
-        background: transparent;
-        dock: right;
-    }
-    CopyButton:hover {
-        color: $text;
-    }
-    """
 
     ICON_COPY: ClassVar[str] = "🗐"
     ICON_CHECK: ClassVar[str] = "✓"
@@ -66,26 +52,6 @@ class CopyButton(Static):
 class ChatMessage(Container):
     """Base class for all chat messages."""
 
-    DEFAULT_CSS = """
-    ChatMessage {
-        margin: 1 0;
-        padding: 1 2;
-        border: blank;
-        height: auto;
-        width: 1fr;
-        border-title-align: left;
-        border-subtitle-align: right;
-    }
-
-    ChatMessage > .chat-row {
-        height: auto;
-    }
-
-    ChatMessage > .chat-row > Markdown {
-        width: 1fr;
-    }
-    """
-
     def __init__(
         self, role: str, content: str = "", date_time: datetime | None = None, **kwargs
     ) -> None:
@@ -101,19 +67,11 @@ class ChatMessage(Container):
     def compose(self) -> ComposeResult:
         with Horizontal(classes="chat-row"):
             yield Markdown(self.content)
-            yield CopyButton(self.content)
+            yield IconCopy(self.content)
 
 
 class ChatMessageUser(ChatMessage):
     """Message sent by the user."""
-
-    DEFAULT_CSS = """
-    ChatMessageUser {
-        background: #1a1a1a;
-        color: $text;
-        margin: 1 8 1 1;
-    }
-    """
 
     def __init__(self, content: str, **kwargs) -> None:
         super().__init__(role="user", content=content, **kwargs)
@@ -122,31 +80,16 @@ class ChatMessageUser(ChatMessage):
 class ChatMessageAssistant(ChatMessage):
     """Message sent by the assistant."""
 
-    DEFAULT_CSS = """
-    ChatMessageAssistant {
-        background: #1a1a1a;
-        color: $text;
-        margin: 1 1 1 8;
-    }
-
-    .thinking-content {
-        color: $text-muted;
-        background: #111111;
-        padding: 1;
-        border-left: wide $success;
-    }
-    """
-
     def __init__(
         self,
         content: str,
-        thinking: str | None = None,
+        thinking_text: str | None = None,
         cost: float | None = None,
         tokens: int | None = None,
         **kwargs,
     ) -> None:
         super().__init__(role="assistant", content=content, **kwargs)
-        self.thinking_text = thinking
+        self.thinking_text = thinking_text
         self.cost = cost
         self.tokens = tokens
 
@@ -173,51 +116,25 @@ class ChatMessageAssistant(ChatMessage):
 class ChatMessageTool(ChatMessage):
     """Message representing tool output."""
 
-    DEFAULT_CSS = """
-    ChatMessageTool {
-        background: $panel;
-        color: $warning-lighten-1;
-        margin: 1 4 1 4;
-    }
-    """
-
-    def __init__(self, tool_name: str, output: str, **kwargs) -> None:
+    def __init__(self, tool_name: str, output: str, log_tool: str | None = None, **kwargs) -> None:
         # Format content as markdown code block for the base class
         formatted_content = f"```\n{output}\n```"
         super().__init__(role="tool", content=formatted_content, **kwargs)
         self.border_title = f"Tool: {tool_name}"
+        self.log_tool = log_tool
+
+    def compose(self) -> ComposeResult:
+        yield from super().compose()
+        if self.log_tool:
+            yield Collapsible(
+                Markdown(self.log_tool),
+                classes="tool-content",
+                title="Tool Log",
+            )
 
 
 class ChatMessageConfirm(ChatMessage):
     """Interactive confirmation message."""
-
-    DEFAULT_CSS = """
-    ChatMessageConfirm {
-        background: $surface-lighten-1;
-        color: $warning;
-        margin: 1 4 1 4;
-        border: wide $warning;
-        height: auto;
-        border-title-align: center;
-    }
-
-    ChatMessageConfirm Label {
-        width: 100%;
-        content-align: center middle;
-        padding: 1;
-    }
-
-    ChatMessageConfirm .buttons {
-        width: 100%;
-        height: auto;
-        align: center middle;
-        margin-top: 1;
-    }
-
-    ChatMessageConfirm Button {
-        margin: 0 1;
-    }
-    """
 
     class Confirmed(Message):
         def __init__(self, result: bool) -> None:
@@ -234,8 +151,8 @@ class ChatMessageConfirm(ChatMessage):
     def compose(self) -> ComposeResult:
         yield Label(self.question)
         with Horizontal(classes="buttons"):
-            yield Button("Yes", variant="success", id="btn-yes")
-            yield Button("No", variant="error", id="btn-no")
+            yield Button("Yes", variant="success", id="btn-yes", flat=True)
+            yield Button("No", variant="error", id="btn-no", flat=True)
 
     @on(Button.Pressed, "#btn-yes")
     def on_yes(self) -> None:
@@ -251,15 +168,6 @@ class ChatMessageConfirm(ChatMessage):
 class ChatViewer(VerticalScroll):
     """Container for chat messages."""
 
-    DEFAULT_CSS = """
-    ChatViewer {
-        height: 1fr;
-        background: $surface;
-        border: blank;
-        scrollbar-gutter: stable;
-    }
-    """
-
     def add_message(self, message: ChatMessage) -> None:
         self.mount(message)
         # Ensure we scroll to the bottom when a new message arrives
@@ -273,24 +181,11 @@ class ChatStatus(Static):
     """Status bar showing current state or hints."""
 
     status = reactive("")
+    icon = reactive("●")
     is_busy = reactive(False)
 
-    DEFAULT_CSS = """
-    ChatStatus {
-        height: 1;
-        background: $surface-darken-1;
-        color: $text-muted;
-        padding: 0 1;
-        text-align: right;
-    }
-    .busy {
-        color: $warning;
-    }
-    """
-
     def render(self) -> str:
-        icon = "⟳ " if self.is_busy else "● "
-        return f"{icon}{self.status}"
+        return f"{self.icon} {self.status}"
 
     def watch_is_busy(self, busy: bool) -> None:
         self.set_class(busy, "busy")
@@ -301,40 +196,6 @@ class ChatInput(Vertical):
     Input with autocomplete
     Layout: Vertical stack of (InputContainer) and (OptionList).
     InputContainer Input field.
-    """
-
-    DEFAULT_CSS = """
-    ChatInput {
-        height: auto;
-        min-height: 3;
-        background: #111111;
-    }
-
-    /*
-        Stack input and autocomplete text
-        Using dock: top allows them to overlap if we ensure container has height.
-    */
-    ChatInput .input-container {
-        height: auto;
-        min-height: 1;
-        width: 100%;
-        /* layout: vertical; Default is fine, docking removes from flow */
-    }
-
-    #chat-input {
-        background: transparent;
-        border: blank;
-        width: 100%;
-        height: auto;
-    }
-
-    ChatInput OptionList {
-        height: auto;
-        max-height: 14;
-        border: blank;
-        background: $surface;
-        display: none;
-    }
     """
 
     class Submitted(Message):
@@ -413,12 +274,6 @@ class ChatInput(Vertical):
     def _on_option_selected(self, event: OptionList.OptionSelected) -> None:
         event.stop()
         if self._active_token:
-            self._apply_suggestion(event.option)
-
-    @on(OptionList.OptionHighlighted)
-    def _on_option_highlighted(self, event: OptionList.OptionHighlighted) -> None:
-        event.stop()
-        if event.option:
             self._apply_suggestion(event.option)
 
     # --- Key Handling ---

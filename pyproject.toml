@@ -1,51 +1,41 @@
 [project]
 name = "friday"
-version = "0.1.0"
-description = "Terminal LLM assistant skeleton"
+version = "0.0.1"
+description = "Friday is a Terminal (TUI) LLM assistant"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-  "beautifulsoup4>=4.12",
-  "faststream>=0.5.0",
-  "httpx>=0.27",
-  "jsonschema>=4.22",
-  "mcp>=1.25.0",
-  "mss>=9.0",
+  "agno>=2.3.24",
+  "crawl4ai>=0.7.8",
+  "ddgs>=9.10.0",
+  "newspaper3k>=0.2.8",
+  "pydantic>=2.12.5",
+  "pydantic-settings>=2.12.0",
   "pyperclip>=1.11.0",
-  "python-dateutil>=2.9",
-  "python-dotenv>=1.0",
+  "python-dotenv>=1.2.1",
   "rich>=13.7",
   "textual>=0.58",
-  "textual-dev>=1.8.0",
   "typer>=0.12",
+  "wikipedia>=1.4.0",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
-  "pytest>=8.0",
-  "taskipy>=1.12",
-  "ruff>=0.6",
-  "ty>=0.0",
-]
-voice = [
-  "faster-whisper>=1.0",
-  "numpy>=1.26",
-  "pyttsx3>=2.90",
-  "sounddevice>=0.4",
-  "webrtcvad>=2.0.10",
+    "ruff>=0.14.11",
+    "ty>=0.0.11",
+    "pytest>=8.0",
+    "pytest-asyncio>=1.3.0",
+    "taskipy>=1.12",
+    "textual-dev>=1.8.0",
 ]
 
-[project.scripts]
-friday = "friday.cli:app"
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+[tool.typer]
+entrypoint = "app.cli:app"
 
 [tool.ruff]
-line-length = 88
+line-length = 100
 target-version = "py312"
-src = ["src", "tests"]
+src = ["app", "tests"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -63,6 +53,7 @@ addopts = "-q"
 [tool.taskipy.tasks]
 # Running
 run = "uv run friday --help"
+tui = "uv run friday tui"
 
 # Quality
 format = "uv run ruff format ."
@@ -74,9 +65,3 @@ test = "uv run pytest"
 # All-in-one
 check = "task format && task lint && task typecheck && task test"
 
-[dependency-groups]
-dev = [
-    "pytest-asyncio>=1.3.0",
-    "ruff>=0.14.11",
-    "ty>=0.0.11",
-]

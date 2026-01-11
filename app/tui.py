@@ -1,10 +1,10 @@
-import time
+import asyncio
 
 from textual import on
 from textual.app import App, ComposeResult
 from textual.widgets import Footer, Header
 
-from friday.app.components.chat import (
+from components.chat import (
     ChatInput,
     ChatMessageAssistant,
     ChatMessageConfirm,
@@ -43,15 +43,15 @@ class FridayApp(App):
             )
         )
         viewer.add_message(
-            ChatMessageTool("search_web", "Found 5 results for 'textual'.")
+            ChatMessageTool("search_web", "Found 5 results for 'textual'.", "Tool log")
         )
         viewer.add_message(ChatMessageConfirm("Delete all files?"))
 
-    def on_chat_input_submitted(self, event: ChatInput.Submitted) -> None:
+    async def on_chat_input_submitted(self, event: ChatInput.Submitted) -> None:
         self.query_one(ChatViewer).add_message(ChatMessageUser(event.value))
         self.query_one(ChatInput).clear()
         self.query_one(ChatStatus).status = "Thinking..."
-        time.sleep(2)
+        await asyncio.sleep(2)
         self.query_one(ChatStatus).status = "Ready"
         self.query_one(ChatViewer).add_message(
             ChatMessageAssistant(
@@ -60,7 +60,7 @@ class FridayApp(App):
         )
 
     @on(ChatMessageConfirm.Confirmed)
-    def on_confirm(self, event: ChatMessageConfirm.Confirmed) -> None:
+    async def on_confirm(self, event: ChatMessageConfirm.Confirmed) -> None:
         response = "User confirmed: Yes" if event.result else "User confirmed: No"
         self.query_one(ChatViewer).add_message(ChatMessageUser(response))
 
