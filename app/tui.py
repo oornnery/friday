@@ -16,6 +16,7 @@ with suppress(ImportError):
 from app.agent.agents import (
     async_chat,
     delete_session,
+    get_session_messages,
     get_session_summary,
     get_tools_list,
     list_sessions,
@@ -154,12 +155,28 @@ class FridayApp(App):
         self.push_screen(InputModal("Rename Chat"), do_rename)
 
     async def resume_chat(self, sid: str):
-        """Inject summary when resuming a session."""
-        summary = get_session_summary(sid)
-        if summary:
-            txt = f"Summary: {summary}"
-            msg = ChatMessageAssistant(content=txt)
-            self.query_one(ChatViewer).add_message(msg)
+        """Load previous messages when resuming a session."""
+        viewer = self.query_one(ChatViewer)
+
+        # Load messages from history
+        messages = get_session_messages(sid)
+        for msg_data in messages:
+            role = msg_data.get("role", "")
+            content = msg_data.get("content", "")
+            if not content:
+                continue
+            if role == "user":
+                viewer.add_message(ChatMessageUser(content))
+            elif role == "assistant":
+                # Mark as from_history to disable loading/thinking UI
+                viewer.add_message(ChatMessageAssistant(content=content, from_history=True))
+
+        # Optionally show summary if available and no messages loaded
+        if not messages:
+            summary = get_session_summary(sid)
+            if summary:
+                txt = f"Summary: {summary}"
+                viewer.add_message(ChatMessageAssistant(content=txt, from_history=True))
 
     async def on_chat_input_submitted(self, event: ChatInput.Submitted):
         """Handle user input submission."""

@@ -102,22 +102,25 @@ class ChatMessageUser(ChatMessage):
 class ChatMessageAssistant(ChatMessage):
     """Message sent by the assistant with improved thinking/loading UI."""
 
-    is_loading = reactive(True)
+    is_loading = reactive(False)
 
     def __init__(
         self,
-        content: str,
+        content: str = "",
         thinking_text: str = "",
         cost: float | None = None,
         tokens: int | None = None,
+        from_history: bool = False,
         **kwargs,
     ) -> None:
         super().__init__(role="assistant", content=content, **kwargs)
         self.thinking_text = thinking_text
         self.cost = cost
         self.tokens = tokens
-        self.loading_indicator = LoadingIndicator()
+        self.from_history = from_history
         self._thinking_last_update = 0.0
+        # Start loading only for new messages (not from history)
+        self.is_loading = not from_history and not content
 
     def on_mount(self) -> None:
         parts = []
@@ -128,19 +131,50 @@ class ChatMessageAssistant(ChatMessage):
         parts.append(self.timestamp.strftime("%H:%M:%S"))
         self.border_subtitle = " | ".join(parts)
 
+        # Set initial visibility based on loading state
+        try:
+            loader = self.query_one("#loading-indicator", LoadingIndicator)
+            content_md = self.query_one("#content-md", Markdown)
+            loader.display = self.is_loading
+            content_md.display = not self.is_loading
+        except Exception:
+            pass
+
     def compose(self) -> ComposeResult:
-        # 1. Main Content (Response) ALWAYS ABOVE
-        yield from super().compose()
+        # Content area - shows loading or markdown
+        with Vertical(id="content-area"):
+            yield LoadingIndicator(id="loading-indicator")
+            yield Markdown(self.content, id="content-md")
+        yield IconCopy(self.content)
 
-        # 2. Loading Indicator (persistent until stop_loading)
-        yield self.loading_indicator
+        # Thinking/Reasoning - only for new messages
+        if not self.from_history:
+            with Collapsible(
+                title="Thinking Process", collapsed=False, id="thinking-collapsible"
+            ):
+                with VerticalScroll(classes="thinking-scroll"):
+                    yield Markdown(self.thinking_text or "Thinking...", id="thinking-md")
 
-        # 3. Thinking/Reasoning (Available from start, scrollable)
-        with (
-            Collapsible(title="Thinking Process", collapsed=False, id="thinking-collapsible"),
-            VerticalScroll(classes="thinking-scroll"),
-        ):
-            yield Markdown(self.thinking_text or "Thinking...", id="thinking-md")
+    def watch_is_loading(self, loading: bool) -> None:
+        """Toggle visibility between loading indicator and content."""
+        try:
+            loader = self.query_one("#loading-indicator", LoadingIndicator)
+            content_md = self.query_one("#content-md", Markdown)
+            loader.display = loading
+            content_md.display = not loading
+        except Exception:
+            pass
+
+    def update_content(self, new_content: str, force: bool = False) -> None:
+        """Update content and switch from loading to content view."""
+        self.content = new_content
+        now = time.time()
+        if force or (now - self._last_update > self._update_threshold):
+            try:
+                self.query_one("#content-md", Markdown).update(new_content)
+                self._last_update = now
+            except Exception:
+                pass
 
     def update_thinking(self, text: str) -> None:
         """Update the thinking text with throttling."""
@@ -157,25 +191,15 @@ class ChatMessageAssistant(ChatMessage):
     def stop_thinking(self) -> None:
         """Collapse thinking process and ensure final text is set."""
         try:
-            # Final update
             self.query_one("#thinking-md", Markdown).update(self.thinking_text)
-            # Collapse
             col = self.query_one("#thinking-collapsible", Collapsible)
             col.collapsed = True
         except Exception:
             pass
 
     def stop_loading(self) -> None:
-        """Stop the loading state and hide indicator."""
+        """Stop the loading state and show content."""
         self.is_loading = False
-        try:
-            if self.loading_indicator.is_mounted:
-                # Instead of removing, we should probably just hide it if we want it "available"
-                # but "available from the beginning" means yielded.
-                # Removing is safer for performance if it's no longer needed.
-                self.loading_indicator.display = False
-        except Exception:
-            pass
 
 
 class ChatMessageTool(ChatMessage):

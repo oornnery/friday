@@ -117,6 +117,46 @@ def get_session_summary(session_id: str) -> str:
     return ""
 
 
+def get_session_messages(session_id: str) -> list[dict[str, Any]]:
+    """Retrieve all messages from a session's history.
+
+    Returns a list of dicts with 'role' and 'content' keys.
+    """
+    db = get_db()
+    session = db.get_session(session_id=session_id, session_type=SessionType.AGENT)
+    if not session:
+        return []
+
+    result: list[dict[str, Any]] = []
+
+    # Get chat history from session if available
+    if hasattr(session, "get_chat_history"):
+        messages = session.get_chat_history()
+        for msg in messages:
+            role = getattr(msg, "role", "unknown")
+            content = getattr(msg, "content", "")
+            if role == "system" or not content:
+                continue
+            result.append({"role": role, "content": content})
+        return result
+
+    # Fallback: iterate over runs to extract messages
+    runs = getattr(session, "runs", None)
+    if runs:
+        for run in runs:
+            run_messages = getattr(run, "messages", [])
+            for msg in run_messages:
+                role = getattr(msg, "role", "unknown")
+                content = getattr(msg, "content", "")
+                from_history = getattr(msg, "from_history", False)
+                # Skip system messages, empty content, and history duplicates
+                if role == "system" or not content or from_history:
+                    continue
+                result.append({"role": role, "content": content})
+
+    return result
+
+
 def rename_session(session_id: str, new_name: str):
     db = get_db()
     existing = db.get_session(session_id=session_id, session_type=SessionType.AGENT)

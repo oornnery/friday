@@ -12,10 +12,15 @@ from textual.widgets import Button, Input, Label, ListItem, ListView
 class InputModal(ModalScreen[str]):
     """A simple modal to get text input (e.g., chat name) following Confirm pattern."""
 
+    BINDINGS = [("escape", "cancel", "Close")]
+
     def __init__(self, title: str, initial_value: str = ""):
         super().__init__()
         self.title_text = title
         self.initial_value = initial_value
+
+    def action_cancel(self) -> None:
+        self.dismiss(None)
 
     def compose(self) -> ComposeResult:
         with Vertical(id="modal-container"):
@@ -61,10 +66,18 @@ class HistoryItem(ListItem):
 class HistoryScreen(ModalScreen[str]):
     """A screen to browse and manage old chats."""
 
+    BINDINGS = [("escape", "close", "Close")]
+
     def __init__(self, sessions: list[dict[str, Any]]):
         super().__init__()
-        self.all_sessions = sessions
-        self.filtered_sessions = sessions
+        # Sort sessions by created_at descending (most recent first)
+        self.all_sessions = sorted(
+            sessions, key=lambda s: s.get("created_at", 0), reverse=True
+        )
+        self.filtered_sessions = self.all_sessions
+
+    def action_close(self) -> None:
+        self.dismiss(None)
 
     def compose(self) -> ComposeResult:
         with Vertical(id="history-container"):
@@ -73,16 +86,21 @@ class HistoryScreen(ModalScreen[str]):
             yield ListView(id="history-list")
             with Horizontal(classes="buttons", id="history-footer"):
                 yield Button("Delete", variant="error", id="delete-btn", flat=True)
-                yield Button("Close", variant="primary", id="close-btn", flat=True)
+                yield Button("Open", variant="success", id="open-btn", flat=True)
 
     def on_mount(self) -> None:
         self.refresh_list()
+        # Focus on search input first
+        self.query_one("#search-input", Input).focus()
 
     def refresh_list(self) -> None:
         list_view = self.query_one("#history-list", ListView)
         list_view.clear()
         for session in self.filtered_sessions:
             list_view.append(HistoryItem(session))
+        # Select first item if available
+        if self.filtered_sessions:
+            list_view.index = 0
 
     @on(Input.Changed, "#search-input")
     def filter_history(self, event: Input.Changed):
@@ -107,14 +125,18 @@ class HistoryScreen(ModalScreen[str]):
             session_id = item.session.get("session_id")
             self.dismiss(cast(str, session_id))
 
-    @on(Button.Pressed, "#close-btn")
-    def close(self):
-        self.dismiss(None)
+    @on(Button.Pressed, "#open-btn")
+    def open_selected(self):
+        list_view = self.query_one("#history-list", ListView)
+        if list_view.index is not None and list_view.children:
+            item = cast(HistoryItem, list_view.children[list_view.index])
+            session_id = item.session.get("session_id")
+            self.dismiss(cast(str, session_id))
 
     @on(Button.Pressed, "#delete-btn")
     def delete_selected(self):
         list_view = self.query_one("#history-list", ListView)
-        if list_view.index is not None:
+        if list_view.index is not None and list_view.children:
             # Cast children element to HistoryItem
             item = cast(HistoryItem, list_view.children[list_view.index])
             session_id = item.session.get("session_id")

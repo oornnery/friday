@@ -55,6 +55,25 @@ ChatMessageAssistant {
     margin: 1 1 1 8;
 }
 
+ChatMessageAssistant #content-area {
+    height: auto;
+    width: 1fr;
+}
+
+ChatMessageAssistant #loading-indicator {
+    height: 3;
+    width: 100%;
+}
+
+ChatMessageAssistant #content-md {
+    width: 1fr;
+}
+
+ChatMessageAssistant .thinking-scroll {
+    height: auto;
+    max-height: 10;
+}
+
 ChatMessageAssistant Collapsible {
     color: $text-muted;
     background: #1a1a1a;
@@ -117,6 +136,7 @@ ChatMessageConfirm .buttons {
 
 ChatMessageConfirm Button {
     margin: 0 1;
+    margin: 0 1 0 0;
 }
 
 ChatViewer {
@@ -173,6 +193,11 @@ ChatInput OptionList {
 
 InputModal, HistoryScreen {
     align: center middle;
+}
+
+InputModal Button, HistoryScreen Button {
+    margin: 0 1 0 0;
+    width: 50%;
 }
 
 #modal-container {
