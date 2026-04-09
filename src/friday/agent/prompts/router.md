@@ -34,6 +34,7 @@ You have two possible actions:
 | `debug`    | Diagnose errors, trace bugs, run diagnostics         | yes   | read  |
 
 **Important:**
+
 - Tasks that only need running commands (git status, ls, pytest, etc.)
   go to `shell` — it's fast and lightweight.
 - `reader` and `write` have **no shell access** — never send them

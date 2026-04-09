@@ -37,6 +37,7 @@
 - [ ] Hook definition in `config.toml` as shell commands or Python entry points
 
 ### Plugin system
+
 - [ ] Load custom tools from `~/.config/friday/tools/` as Python modules
 - [ ] Each plugin defines one or more tools with metadata (name, description, args)
 - [ ] Plugins can specify which modes they are allowed in
