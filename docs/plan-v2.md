@@ -1,0 +1,116 @@
+# Modernização profunda do Friday para Pydantic AI 1.78 com CLI unificada
+
+## Resumo
+- Baseline confirmado em 9 de abril de 2026: o ambiente local já está em `pydantic-ai 1.78.0`, então esta rodada foca em alinhar o runtime com a API atual e em corrigir gaps de arquitetura e UX.
+- A direção é profunda: contratos tipados internos, fluxo nativo de deferred approval, MCP real via `toolsets`, limites de uso efetivos, redução de histórico, e unificação total da superfície de comandos.
+- A CLI deixa de ser mista e passa a seguir uma gramática consistente: verbos só para interação (`ask`, `chat`) e recursos sempre no plural (`models`, `modes`, `sessions`, `settings`).
+- A quebra de nomenclatura é limpa: nomes antigos não ficam como alias; o erro deve apontar o comando novo correto.
+
+## Superfície de Comandos
+- Manter verbos top-level:
+  - `friday ask`
+  - `friday chat`
+- Recursos top-level padronizados:
+  - `friday models`
+  - `friday modes`
+  - `friday sessions`
+  - `friday settings`
+- Gramática dos recursos:
+  - `friday models` = ação padrão `list`
+  - `friday models list [provider]` = imprime somente a lista
+  - `friday models set [model]` = define `default_model` global
+  - `friday modes` = ação padrão `list`
+  - `friday modes list` = imprime modos disponíveis
+  - `friday modes set [mode]` = define `default_mode` global
+  - `friday sessions` = ação padrão `list`
+  - `friday sessions list` = imprime tabela
+  - `friday sessions resume [id]`
+  - `friday sessions delete [id]`
+  - `friday sessions new` = entra em um chat novo
+  - `friday settings` = ação padrão `list`
+  - `friday settings list` = imprime settings efetivos
+  - `friday settings get [key]` = imprime um setting
+- REPL alinhado com a mesma gramática:
+  - remover `/model` e `/session`
+  - adicionar `/models`, `/modes`, `/sessions`, `/settings`
+  - manter `/clear`, `/help`, `/quit`, `/exit`
+  - `/models set` altera a sessão atual
+  - `/modes set` altera a sessão atual
+  - `/sessions new|resume|delete|list` usa a mesma semântica da CLI
+  - `/settings` no REPL é leitura apenas
+- Fuzzy e autocomplete:
+  - ação padrão de recurso continua sendo `list`
+  - comandos que exigem seleção e vierem sem argumento em TTY interativo abrem picker
+  - no shell usar `fzf` quando disponível
+  - no REPL usar o picker interno com busca
+  - em contexto não interativo nunca abrir picker; retornar erro/usage claro
+  - autocomplete sempre ativo para comandos, subcomandos, modelos, modos, sessões e chaves de config
+- Compatibilidade e mensagens:
+  - sem alias para `session`, `/session`, `/model`, `config`
+  - erros devem sugerir `sessions`, `/sessions`, `/models`, `settings`
+  - README, `/help`, completions e plugin devem refletir só a nomenclatura nova
+
+## Mudanças de Implementação
+- Dependências:
+  - fixar deps diretas no `pyproject`: `pydantic-ai>=1.78,<1.79`, `pydantic>=2.12,<3`, `pydantic-settings>=2.13,<3`, `anthropic`, `openai`, `httpx`
+  - remover dependência implícita de imports transitivos
+- Runtime de agentes:
+  - centralizar criação e execução em um runtime único para CLI e REPL
+  - trocar `system_prompt` concatenado por `instructions`
+  - aplicar `UsageLimits(tool_calls_limit=max_steps, request_limit=max_steps + 5)` em todos os runs
+  - em delegação, passar `usage=ctx.usage`
+  - corrigir o bug em que troca de modo/modelo não afeta o próximo turno com histórico existente
+- Tools, approvals e MCP:
+  - migrar para `FunctionToolset` por domínio
+  - usar `ApprovalRequiredToolset` para operações sensíveis
+  - implementar `approval_policy` via deferred tools:
+    - `ask`: CLI coleta aprovação e retoma o run
+    - `auto`: aprova e retoma
+    - `never`: rejeita com retorno explícito ao agente
+  - ligar `mcp_servers` reais ao `Agent` via `toolsets=[...]`
+- Contexto, histórico e memória:
+  - adicionar `history_processors` pair-safe
+  - não usar sumarização por LLM nesta rodada
+  - tornar `WorkingMemory` determinística e útil; remover `Session`/`Message` redundantes se seguirem mortos
+- Tipagem e validação:
+  - introduzir `AgentReply` em Pydantic para saídas internas
+  - specialized agents retornam `AgentReply`
+  - usar `TurnOutput = AgentReply | DeferredToolRequests`
+  - trocar parsing frouxo de frontmatter por `ModePromptConfig` em Pydantic
+  - versionar persistência como `SessionEnvelope(schema_version=2)`
+- Infra de comandos:
+  - criar um catálogo único de comandos e recursos para evitar drift entre Typer, parser do REPL, help, completer e plugin ZSH
+  - o plugin deixa de hardcodear subcomandos manualmente
+  - remover ou substituir referências quebradas como `friday history`; `Ctrl+G` deve apontar para um fluxo real de `sessions`
+
+## Testes e Critérios de Aceite
+- Cobrir com `TestModel` e `FunctionModel` do `pydantic-ai`
+- Regressões obrigatórias:
+  - `models`, `modes`, `sessions`, `settings` funcionam com ação padrão correta
+  - `models list` só imprime; `models set` altera o alvo correto
+  - `/models set` e `/modes set` alteram a sessão atual mesmo com histórico existente
+  - `sessions resume/delete` abrem picker quando faltarem argumentos em TTY
+  - nomes antigos falham com sugestão do nome novo
+  - `approval_policy=ask|auto|never` funciona via deferred tools
+  - `max_steps` deixa de ser decorativo
+  - MCP configurado aparece como ferramenta disponível
+- Qualidade mínima:
+  - `ruff check`
+  - `ty check --exclude tests/`
+  - `pytest`
+- Adicionar pelo menos:
+  - 1 teste do catálogo unificado de comandos
+  - 1 teste de completions/sugestões dos novos comandos
+  - 1 teste do fluxo completo de approval no chat
+  - 1 teste do router com saída tipada
+  - 1 teste de history processor pair-safe
+  - 1 teste de wiring de MCP/toolsets
+
+## Assunções e Defaults
+- Manter `ask` e `chat` como verbos top-level ergonômicos
+- `models set` e `modes set` na CLI persistem globalmente
+- `/models set` e `/modes set` no REPL alteram a sessão atual
+- `settings` fica read-only nesta rodada; mutações diretas de config ficam concentradas em `models set` e `modes set`
+- Não introduzir observabilidade nesta rodada
+- Não adicionar sumarização por LLM nesta rodada
+- Remover abstrações mortas é permitido; criar camadas genéricas sem uso imediato não é

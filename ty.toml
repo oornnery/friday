@@ -1,0 +1,21 @@
+# ty.toml — Python type checker configuration
+# Docs: https://ty.astral.sh/docs/configuration/
+# Run: uv run ty check
+
+[environment]
+python = ".venv"
+python-version = "3.13"
+
+[terminal]
+output-format = "full"
+
+[rules]
+division-by-zero = "error"
+possibly-missing-attribute = "warn"
+possibly-missing-import = "warn"
+possibly-unresolved-reference = "warn"
+ignore-comment-unknown-rule = "error"
+unused-type-ignore-comment = "error"
+unused-ignore-comment = "error"
+undefined-reveal = "error"
+unused-awaitable = "error"
