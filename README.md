@@ -138,12 +138,12 @@ The `/model` and `/mode` pickers support **search** -- type to filter:
 
 ### ZSH Keybindings
 
-| Key | Action |
-| --- | --- |
-| `f "question"` | Ask Friday from anywhere |
-| `Ctrl+F` | Ask about current buffer / last command |
-| `Ctrl+G` | Fuzzy session picker (requires fzf) |
-| `friday-select-model` | Interactive model picker with fzf |
+| Key                   | Action                                  |
+| --------------------- | --------------------------------------- |
+| `f "question"`        | Ask Friday from anywhere                |
+| `Ctrl+F`              | Ask about current buffer / last command |
+| `Ctrl+G`              | Fuzzy session picker (requires fzf)     |
+| `friday-select-model` | Interactive model picker with fzf       |
 
 ### Resource Commands (CLI)
 
@@ -200,13 +200,13 @@ friday memory search "preferences"
 
 ### Agent Modes
 
-| Mode | Purpose | Tools |
-| --- | --- | --- |
-| **auto** | Routes to the right specialist | delegation only |
-| **code** | Write, edit, test code | read, write, patch, list, search, shell |
-| **reader** | Analyze and explain code | read, list, search |
-| **write** | Generate docs and text | read, write, list, search |
-| **debug** | Diagnose errors and bugs | read, list, search, shell |
+| Mode       | Purpose                        | Tools                                   |
+| ---------- | ------------------------------ | --------------------------------------- |
+| **auto**   | Routes to the right specialist | delegation only                         |
+| **code**   | Write, edit, test code         | read, write, patch, list, search, shell |
+| **reader** | Analyze and explain code       | read, list, search                      |
+| **write**  | Generate docs and text         | read, write, list, search               |
+| **debug**  | Diagnose errors and bugs       | read, list, search, shell               |
 
 Each mode is defined in `src/friday/agent/prompts/<mode>.md` with YAML
 frontmatter specifying tools, max steps, model override, and thinking.
@@ -255,13 +255,13 @@ tool. The harness indexes chat turns for cross-session search.
 
 ### Supported Providers
 
-| Prefix | Provider | Auth |
-| --- | --- | --- |
+| Prefix       | Provider           | Auth                |
+| ------------ | ------------------ | ------------------- |
 | `anthropic:` | Anthropic (Claude) | `ANTHROPIC_API_KEY` |
-| `openai:` | OpenAI (GPT) | `OPENAI_API_KEY` |
-| `mistral:` | Mistral AI | `MISTRAL_API_KEY` |
-| `zai:` | Z.AI (GLM) | `ZAI_API_KEY` |
-| `ollama:` | Ollama (local) | no key needed |
+| `openai:`    | OpenAI (GPT)       | `OPENAI_API_KEY`    |
+| `mistral:`   | Mistral AI         | `MISTRAL_API_KEY`   |
+| `zai:`       | Z.AI (GLM)         | `ZAI_API_KEY`       |
+| `ollama:`    | Ollama (local)     | no key needed       |
 
 Model fallback: if the default model fails (missing key), Friday
 automatically tries `fallback_model` from config.
@@ -294,17 +294,17 @@ Friday reads config from (in priority order):
 
 ### Settings
 
-| Key | Default | Description |
-| --- | --- | --- |
-| `default_model` | `zai:glm-5-turbo` | Default LLM |
-| `fallback_model` | `mistral:devstral-latest` | Fallback if default fails |
-| `default_mode` | `auto` | Default agent mode |
-| `approval_policy` | `ask` | Risky tool confirmation |
-| `max_steps` | `25` | Max tool calls per turn |
-| `session_dir` | `~/.local/share/friday/sessions` | Session storage |
-| `config_dir` | `~/.config/friday` | Config directory |
-| `memory_db_path` | `memory.db` | SQLite memory database |
-| `memory_top_k` | `6` | Memory results per turn |
+| Key               | Default                          | Description               |
+| ----------------- | -------------------------------- | ------------------------- |
+| `default_model`   | `zai:glm-5-turbo`                | Default LLM               |
+| `fallback_model`  | `mistral:devstral-latest`        | Fallback if default fails |
+| `default_mode`    | `auto`                           | Default agent mode        |
+| `approval_policy` | `ask`                            | Risky tool confirmation   |
+| `max_steps`       | `25`                             | Max tool calls per turn   |
+| `session_dir`     | `~/.local/share/friday/sessions` | Session storage           |
+| `config_dir`      | `~/.config/friday`               | Config directory          |
+| `memory_db_path`  | `memory.db`                      | SQLite memory database    |
+| `memory_top_k`    | `6`                              | Memory results per turn   |
 
 Runtime override in chat: `/setting default_model=mistral:codestral-latest`
 

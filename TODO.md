@@ -3,22 +3,26 @@
 ## Configurability
 
 ### Providers & Models
+
 - [ ] Dynamic provider registration via `config.toml` (name, base_url, api_key_env, sdk)
 - [ ] Allow adding Ollama-compatible endpoints without code changes
 - [ ] Per-model settings in config: `temperature`, `max_tokens`, `top_p`, `thinking_budget`
 - [ ] Model aliases: `fast`, `smart`, `local` → resolved at runtime
 
 ### Modes
+
 - [ ] User-defined modes: load any `.md` file from `~/.config/friday/modes/` as a new mode
 - [ ] `AgentMode` becomes an open string instead of a locked enum
 - [ ] Mode inheritance: extend a base mode and override only frontmatter fields
 
 ### Tools / Skills
+
 - [ ] Plugin system: load tool modules from `~/.config/friday/tools/`
 - [ ] Per-mode tool allowlist/denylist in config (complement frontmatter)
 - [ ] Tool timeout overrides per tool in config
 
 ### Hooks
+
 - [ ] `on_user_input` — pre-process or gate user messages
 - [ ] `on_tool_call` — log, audit, or block specific tool calls
 - [ ] `on_agent_reply` — post-process or transform replies
@@ -26,6 +30,7 @@
 - [ ] Hook definition in `config.toml` as shell commands or Python entry points
 
 ### Runtime `/setting`
+
 - [ ] Expose all `FridaySettings` fields as mutable via `/setting <key>=<value>`
 - [ ] Persist overrides to session envelope so they survive `/session resume`
 - [ ] `/setting reset` to restore defaults
