@@ -1,5 +1,5 @@
 [project]
-name = "friday"
+name = "friday-sh"
 version = "0.1.0"
 description = "LLM-powered shell agent — a ZSH extension for coding, debugging, and shell assistance"
 readme = "README.md"
@@ -9,13 +9,13 @@ dependencies = [
     "httpx>=0.28,<1",
     "openai>=2.31,<3",
     "pydantic>=2.12,<3",
-    "pydantic-ai>=1.78,<1.79",
+    "pydantic-ai>=1.78,<2",
     "pydantic-settings>=2.13,<3",
-    "typer>=0.15",
-    "rich>=13.0",
-    "prompt-toolkit>=3.0",
-    "python-dotenv>=1.0",
-    "pyyaml>=6.0",
+    "typer>=0.15,<1",
+    "rich>=13.0,<14",
+    "prompt-toolkit>=3.0,<4",
+    "python-dotenv>=1.0,<2",
+    "pyyaml>=6.0,<7",
 ]
 
 [project.scripts]
@@ -53,9 +53,9 @@ ignore = ["S101"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["S"]
-"src/friday/agent/context.py" = ["S603", "S607"]  # git subprocess calls
-"src/friday/tools/filesystem.py" = ["S603"]        # ripgrep/grep calls
-"src/friday/tools/shell.py" = ["S602"]             # shell=True is the tool's purpose
+"src/friday/agent/context.py" = ["S603", "S607"] # git subprocess calls
+"src/friday/tools/filesystem.py" = ["S603"]      # ripgrep/grep calls
+"src/friday/tools/shell.py" = ["S602"]           # shell=True is the tool's purpose
 
 [tool.ruff.format]
 quote-style = "single"

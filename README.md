@@ -1,5 +1,10 @@
 # friday
 
+[![PyPI](https://img.shields.io/pypi/v/friday-sh?logo=pypi&label=PyPI)](https://pypi.org/project/friday-sh/)
+[![Python](https://img.shields.io/pypi/pyversions/friday-sh?logo=python&label=Python)](https://pypi.org/project/friday-sh/)
+[![CI](https://img.shields.io/github/actions/workflow/status/oornnery/friday-sh/ci.yml?branch=master&logo=githubactions&label=CI)](https://github.com/oornnery/friday-sh/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/oornnery/friday?logo=opensourceinitiative&label=License)](LICENSE)
+
 LLM-powered shell agent that lives in your ZSH terminal.
 
 ```text
@@ -16,20 +21,20 @@ workflow via keybindings and completions.
 ### Install with uvx (no clone needed)
 
 ```bash
-uvx --from git+https://github.com/oornnery/friday friday chat
+uvx --from git+https://github.com/oornnery/friday-sh friday chat
 ```
 
 ### Install with uv tool (global)
 
 ```bash
-uv tool install git+https://github.com/oornnery/friday
+uv tool install git+https://github.com/oornnery/friday-sh
 friday chat
 ```
 
 ### Install from source
 
 ```bash
-git clone https://github.com/oornnery/friday.git
+git clone https://github.com/oornnery/friday-sh.git
 cd friday
 uv sync --group dev --group test
 ```
@@ -371,7 +376,7 @@ src/friday/
 
 ```bash
 # Setup
-git clone https://github.com/oornnery/friday.git
+git clone https://github.com/oornnery/friday-sh.git
 cd friday
 uv sync --group dev --group test
 
